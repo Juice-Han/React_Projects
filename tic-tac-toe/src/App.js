@@ -1,11 +1,11 @@
 import './App.css';
 import { useState } from 'react';
 
-function Square({value, onSquareClick}) {
-  return <button className="square" onClick={onSquareClick}>{value}</button>
+function Square({value, onSquareClick, style}) {
+  return <button className="square" onClick={onSquareClick} style={style}>{value}</button>
 }
 
-function Board({xIsNext,squares,onPlay}) {
+function Board({xIsNext,squares,onPlay,historyLength}) {
 
   function handleClick(i){
     if(squares[i] || calculateWinner(squares)){
@@ -19,20 +19,34 @@ function Board({xIsNext,squares,onPlay}) {
     }
     onPlay(nextSquares)
   }
-
   const winner = calculateWinner(squares);
   let status;
   if(winner){
-    status = 'Winner: ' + winner;
+    status = 'Winner: ' + squares[winner[0]];
   }else{
-    status = 'Next Player: ' + (xIsNext ? 'X' : 'O');
+    if(historyLength === 10){
+      status = 'Draw'
+    }else{
+      status = 'Next Player: ' + (xIsNext ? 'X' : 'O');
+    }
   }
-
+  let colorRed = {
+    color: "red"
+  }
+  let colorBlack = {
+    color: "black"
+  }
   let boardSquares = []
   for(let i=0; i<3; i++){
     let boardRow = []
     for(let j = 0; j<3; j++){
-      boardRow.push(<Square key={3*i+j}value={squares[3*i+j]} onSquareClick={() => handleClick(3*i+j)}/>)
+      let index = 3*i+j
+      if(winner && (index === winner[0] || index === winner[1] || index === winner[2])){
+        boardRow.push(<Square key={3*i+j} value={squares[3*i+j]} onSquareClick={() => handleClick(3*i+j)} style={colorRed}/>)
+      }else{
+        boardRow.push(<Square key={3*i+j} value={squares[3*i+j]} onSquareClick={() => handleClick(3*i+j)} style={colorBlack}/>)
+      }
+      
     }
     boardSquares.push(<div className='board-row' key={i}>{boardRow}</div>)
   }
@@ -120,7 +134,7 @@ export default function Game(){
   return (
     <div className='game'>
       <div className='game-board'>
-        <Board xIsNext={xIsNext} squares={currentSquares} onPlay={handlePlay} />
+        <Board xIsNext={xIsNext} squares={currentSquares} onPlay={handlePlay} historyLength={history.length}/>
       </div>
       <div className='game-info'>
         <ol>{moves}</ol>
@@ -144,7 +158,7 @@ function calculateWinner(squares){
   for (let i = 0; i < lines.length; i++){
     const [a, b, c] = lines[i];
     if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]){
-      return squares[a];
+      return lines[i];
     }
   }
   return null;
