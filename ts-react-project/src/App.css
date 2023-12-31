@@ -1,4 +1,41 @@
 .App {
   text-align: center;
   box-sizing: border-box;
+  background: black;
+  width: 100%;
+  height: 1000px;
+}
+
+.menu-bar{
+  width: 70px;
+  height: 100%;
+  background: black;
+  position: fixed;
+  border-right: 1px solid gray;
+}
+
+.insta-logo{
+  margin-top: 30px;
+}
+
+.menu-icon-wrapper{
+  margin-top: 50px;
+  width: 100%;
+  height: 60%;
+  display: grid;
+  justify-content: center;
+}
+
+.bottom-menu-icon-wrapper{
+  margin-top: 60px;
+  width: 100%;
+  height: 15%;
+  display: grid;
+  justify-content: center;
+}
+
+.dog-icon{
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
 }
