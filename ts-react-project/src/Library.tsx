@@ -1,12 +1,21 @@
 import React from 'react'
-import { Information } from './model/library'
+import { Data } from './model/library'
 
 interface OwnProps {
-    info: Information
+    data : Data;
 }
-const Library : React.FC<OwnProps> = ({info})=> {
+
+const Library: React.FC<OwnProps> = ({data})=> {
+    const books = data.books.map((book) => {
+        return(
+            <div className='book-info'>
+                <div className='book-info_name'>제목: {book.name}</div>
+                <button>대출</button>
+            </div>
+        )
+    })
     return(
-        <div>{info.name}</div>
+        <div>{books}</div>
     )
 }
 

@@ -1,9 +1,9 @@
 import React, {useState} from 'react';
 import Library from './Library';
-import { Information } from './model/library';
+import { Data } from './model/library';
 import './App.css';
 
-let data : Information = {
+let data = {
   name : 'Juhan Library',
   address : 'Incheon',
   since : 2000,
@@ -15,10 +15,9 @@ let data : Information = {
 
 const App : React.FC = ()=> {
 
-  const [myLibrary, setMyLibrary] = useState<Information>(data)
   return (
     <div className="App">
-      <Library info={myLibrary}/>
+      <Library data={data}/>
     </div>
   );
 }
