@@ -1,13 +1,23 @@
 import React, {useState} from 'react';
-import axios from 'axios';
 import './App.css';
 
 const App : React.FC = ()=> {
   return (
     <div className="App">
       <MenuBar/>
+      <MainPage/>
     </div>
   );
+}
+
+const MainPage : React.FC = ()=> {
+  return(
+    <div className='main-page'>
+      <div className='story-container'>
+      
+      </div>
+    </div>
+  )
 }
 
 const MenuBar : React.FC = ()=> {
@@ -31,4 +41,6 @@ const MenuBar : React.FC = ()=> {
       </div>
   )
 }
+
+
 export default App;
