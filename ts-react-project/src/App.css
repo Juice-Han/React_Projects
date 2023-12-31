@@ -2,17 +2,3 @@
   text-align: center;
   box-sizing: border-box;
 }
-
-.book-info{
-  border: 1px solid lightgray;
-  margin-top: 20px;
-  padding: 10px;
-}
-
-.book-info h3{
-  margin: 5px;
-}
-
-.book-info_name{
-  margin: 5px;
-}
