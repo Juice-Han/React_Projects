@@ -11,21 +11,16 @@ const App : React.FC = ()=> {
 }
 
 const MainPage : React.FC = ()=> {
+  let num : number[] = Array.from({length:12}, (_,i)=> i + 1)
+  const images = num.map((n,i) => {
+    return(
+      <div className='story-box' style={{backgroundImage : `url('img/story-image/story${n}.jpg')`}} key={i}/>
+    )
+  })
   return(
     <div className='main-page'>
       <div className='story-container'>
-        <div className='story-box' style={{backgroundImage : "url('img/story-image/story1.jpg')"}}/>
-        <div className='story-box' style={{backgroundImage : "url('img/story-image/story2.jpg')"}}/>
-        <div className='story-box' style={{backgroundImage : "url('img/story-image/story3.jpg')"}}/>
-        <div className='story-box' style={{backgroundImage : "url('img/story-image/story4.jpg')"}}/>
-        <div className='story-box' style={{backgroundImage : "url('img/story-image/story5.jpg')"}}/>
-        <div className='story-box' style={{backgroundImage : "url('img/story-image/story6.jpg')"}}/>
-        <div className='story-box' style={{backgroundImage : "url('img/story-image/story7.jpg')"}}/>
-        <div className='story-box' style={{backgroundImage : "url('img/story-image/story8.jpg')"}}/>
-        <div className='story-box' style={{backgroundImage : "url('img/story-image/story9.jpg')"}}/>
-        <div className='story-box' style={{backgroundImage : "url('img/story-image/story10.jpg')"}}/>
-        <div className='story-box' style={{backgroundImage : "url('img/story-image/story11.jpg')"}}/>
-        <div className='story-box' style={{backgroundImage : "url('img/story-image/story12.jpg')"}}/>
+        {images}
       </div>
     </div>
   )
