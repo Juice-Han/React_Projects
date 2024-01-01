@@ -12,9 +12,14 @@ const App : React.FC = ()=> {
 
 const MainPage : React.FC = ()=> {
   let num : number[] = Array.from({length:12}, (_,i)=> i + 1)
+  let name : string[] = ['이초롱','임바람','황가람','윤햇살','배새롬','심기쁨','류마음','전하나','강샛별','정온','성나무','정바다']
   const images = num.map((n,i) => {
     return(
-      <div className='story-box' style={{backgroundImage : `url('img/story-image/story${n}.jpg')`}} key={i}/>
+      <div className='story-box'>
+        <div className='story-img' style={{backgroundImage : `url('img/story-image/story${n}.jpg')`}} key={i}/>
+        <div>{name[i]}</div>
+      </div>
+      
     )
   })
   return(

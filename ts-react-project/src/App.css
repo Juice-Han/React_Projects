@@ -57,7 +57,7 @@
 .story-container{
   margin-top: 40px;
   width: 60%;
-  height: 70px;
+  height: 80px;
   overflow-x:auto;
   overflow-y: hidden;
   white-space: nowrap;
@@ -69,6 +69,15 @@
 
 .story-box{
   width: 60px;
+  height: 80px;
+  display: inline-block;
+  margin-right: 20px;
+  color: white;
+  font-size: 13px;
+}
+
+.story-img{
+  width: 60px;
   height: 60px;
   border-radius: 50%;
   margin-right: 20px;
@@ -77,3 +86,4 @@
   display: inline-block;
   border: 1px solid orange;
 }
+
