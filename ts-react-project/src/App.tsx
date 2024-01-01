@@ -53,7 +53,7 @@ const MainPage : React.FC = ()=> {
           <div className='info-box_likes'>좋아요 1320개</div>
           <div className='info-box_writing'>
             <span className='info-box_name'>이초롱</span>
-            글 내용 Lorem, ipsum dolor sit amet consectetur adipisicing elit. Dolores itaque ut minus distinctio repellat repellendus exercitationem nam consequuntur neque soluta. Mollitia fuga placeat labore commodi cum modi fugit beatae doloremque.
+            Lorem, ipsum dolor sit amet consectetur adipisicing elit. Dolores itaque ut minus distinctio repellat repellendus exercitationem nam consequuntur neque soluta. Mollitia fuga placeat labore commodi cum modi fugit beatae doloremque.
           </div>
           <div className='info-box_see'>댓글 21개 모두 보기</div>
           <div className='info-box_comment-container'>

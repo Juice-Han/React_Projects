@@ -57,7 +57,7 @@
 
 .story-container{
   margin-top: 40px;
-  width: 70%;
+  width: 60%;
   height: 80px;
   overflow-x:auto;
   overflow-y: hidden;
@@ -170,10 +170,6 @@
 
 .info-box>div{
   margin-bottom: 7px;
-}
-
-.info-box_writing{
-  /* display: flex; */
 }
 
 .info-box_writing-content{
