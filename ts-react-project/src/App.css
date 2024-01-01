@@ -14,7 +14,8 @@
   height: 100%;
   background: rgb(0, 0, 0);
   position: fixed;
-  border-right: 1px solid gray;
+  border-right: 0.3px solid gray;
+  border-left: 0.1px solid gray;
   z-index: 3;
 }
 
@@ -56,7 +57,7 @@
 
 .story-container{
   margin-top: 40px;
-  width: 60%;
+  width: 70%;
   height: 80px;
   overflow-x:auto;
   overflow-y: hidden;
@@ -87,3 +88,118 @@
   border: 1px solid orange;
 }
 
+.contents-container{
+  width: 55%;
+  max-width: 500px;
+  height: 600px;
+  margin-top: 40px;
+}
+
+.profile-box{
+  width: 100%;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.profile-box h4{
+  margin-left: 10px;
+  color: white;
+}
+
+.profile-box p{
+  color: gray;
+  font-size: 14px;
+}
+
+.profile-image{
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background-size: cover;
+  margin-left: 5px;
+}
+
+.menu-box{
+  flex-grow: 1;
+  text-align: end;
+}
+
+.image-box{
+  width: 100%;
+  margin-bottom: 5px;
+}
+
+.image-box img{
+  width: 100%;
+  object-fit: cover;
+}
+
+.icon-box{
+  width: 100%;
+  height: 35px;
+  display: flex;
+  margin-bottom: 5px;
+}
+
+.icon-box img{
+  width: 30px;
+  height: 30px;
+  margin-right: 10px;
+}
+
+.icon-box_middle{
+  flex-grow: 1;
+}
+
+.icon-box_right img{
+  margin-right: 0px;
+}
+
+.info-box{
+  width: 100%;
+  height: 165px;
+  text-align: left;
+  color: white;
+}
+
+.info-box_likes{
+  font-weight:700;
+}
+
+.info-box>div{
+  margin-bottom: 7px;
+}
+
+.info-box_writing{
+  /* display: flex; */
+}
+
+.info-box_writing-content{
+  font-weight: 600;
+  margin-left: 10px;
+}
+
+.info-box_comment-container{
+  display: flex;
+  flex-direction: column; 
+}
+
+.info-box_comment-box{
+  display: flex;
+  flex-direction: row;
+}
+
+.info-box_name{
+  font-weight: 700;
+  margin-right: 10px;
+}
+
+.info-box_see{
+  color: gray;
+}
+
+.info-box_write-comment{
+  color: rgb(141, 141, 141);
+}
