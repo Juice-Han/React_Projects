@@ -3,46 +3,45 @@ import "./App.css";
 
 type ActionType = {
   type : string;
-  number: number;
+  value : number;
 }
-function countReducer(oldCount : number, action: ActionType) : number{
-  if(action.type === 'DOWN'){
-    return oldCount - action.number;
-  }else if(action.type === 'RESET'){
-    return 0;
-  }else{
-    return oldCount + action.number;
+
+function reducer(oldCount: number, action: ActionType): number {
+  switch (action.type) {
+    case "INCREMENT":
+      return oldCount + action.value;
+    case "DECREMENT":
+      return oldCount - action.value;
+    case "RESET":
+      return 0;
+    default:
+      return oldCount;
   }
 }
 
 function App() {
-  const [value, setValue] = useState(1)
-  function down(){
-    countDispatch({type: 'DOWN', number: value});
+  const [value, setValue] = useState(1);
+  const [count, dispatchCount] = useReducer(reducer, 1);
+  
+  const increment = () => {
+    dispatchCount({type : 'INCREMENT', value: value});
   }
-  function reset(){
-    countDispatch({type: 'RESET', number: value});
+  const decrement = () => {
+    dispatchCount({type : 'DECREMENT', value: value});
   }
-  function up(){
-    countDispatch({type: 'UP', number: value});
-  }
-
-  const [count, countDispatch] = useReducer(countReducer, 0);
-
-  function changeInput(e : React.ChangeEvent<HTMLInputElement>){
-    setValue(Number(e.target.value))
-
+  const reset = () => {
+    dispatchCount({type: 'RESET', value: value});
   }
 
-  return(
-    <div className="calc_container">
-      <button onClick={down}>-</button>
+  return (
+    <div>
+      <button onClick={decrement}>-</button>
       <button onClick={reset}>0</button>
-      <button onClick={up}>+</button>
+      <button onClick={increment}>+</button>
       <span>{count}</span>
-      <input value={value} onChange={(e) => changeInput(e)}/>
+      <input value={value} onChange={(e) => setValue(Number(e.target.value))}/>
     </div>
-  )
+  );
 }
 
 export default App;
