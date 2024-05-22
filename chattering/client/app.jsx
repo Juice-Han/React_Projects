@@ -175,10 +175,34 @@ var ChatApp = React.createClass({
 });
 
 var LoginPage = React.createClass({
+  getInitialState() {
+    return { id: "", password: "" };
+  },
+
+  componentDidMount() {
+    socket.on("login", this._checkLogin);
+  },
+
+  login() {
+    const id = this.state.id;
+    const password = this.state.password;
+    socket.emit("login", { id, password });
+  },
+
+  _checkLogin(check) {
+    if (check.state === 200) {
+      this.props.setPageIndex(2);
+    } else if (check.state === 400) {
+      window.alert("계정이 없거나 비밀번호가 틀렸습니다!");
+    } else {
+      window.alert("서버에 문제가 생겼습니다.");
+    }
+  },
+
   render() {
     return (
       <div className="w-100">
-        <form method="POST" action="http://localhost:3000/login" className="w-75 mx-auto">
+        <div className="w-75 mx-auto">
           <h1 className="h3 mb-3 fw-normal my-5">로그인 페이지</h1>
           <div className="form-floating mb-3">
             <input
@@ -186,6 +210,7 @@ var LoginPage = React.createClass({
               className="form-control"
               id="id"
               placeholder="아이디 입력..."
+              onChange={(e) => this.setState({ id: e.target.value })}
             />
             <label for="id">아이디</label>
           </div>
@@ -195,28 +220,107 @@ var LoginPage = React.createClass({
               className="form-control"
               id="pwd"
               placeholder="Password"
+              onChange={(e) => this.setState({ password: e.target.value })}
             />
             <label for="pwd">비밀번호</label>
           </div>
-          <button className="w-100 btn btn-lg btn-primary mb-2" type="submit">
+          <button
+            className="w-100 btn btn-lg btn-primary mb-2"
+            onClick={() => this.login()}
+          >
             로그인
           </button>
-        </form>
-		<button className="btn btn-lg btn-secondary w-75 mx-auto d-block mb-5">회원가입</button>
+        </div>
+        <button
+          className="btn btn-lg btn-secondary w-75 mx-auto d-block mb-5"
+          onClick={() => this.props.setPageIndex(1)}
+        >
+          회원가입
+        </button>
+      </div>
+    );
+  },
+});
+
+var SignOnPage = React.createClass({
+  componentDidMount() {
+    socket.on("signOn", this._checkSignOn);
+  },
+
+  _checkSignOn(check) {
+    if (check.state === 400) {
+      window.alert("아이디가 중복되었습니다. 다른 아이디를 사용해주세요!");
+    } else if (check.state === 200) {
+      window.alert("계정이 생성되었습니다!");
+      this.props.setPageIndex(0);
+    } else {
+      window.alert("서버에 문제가 생겼습니다.");
+    }
+  },
+
+  getInitialState() {
+    return { id: "", password: "" };
+  },
+
+  signOn() {
+    const id = this.state.id;
+    const password = this.state.password;
+    socket.emit("signOn", { id, password });
+  },
+
+  render() {
+    return (
+      <div className="w-100">
+        <div className="w-75 mx-auto">
+          <h1 className="h3 mb-3 fw-normal my-5">회원가입 페이지</h1>
+          <div className="form-floating mb-3">
+            <input
+              type="text"
+              className="form-control"
+              id="id"
+              placeholder="아이디 입력..."
+              onChange={(e) => this.setState({ id: e.target.value })}
+            />
+            <label for="id">아이디</label>
+          </div>
+          <div className="form-floating mb-3">
+            <input
+              type="password"
+              className="form-control"
+              id="pwd"
+              placeholder="Password"
+              onChange={(e) => this.setState({ password: e.target.value })}
+            />
+            <label for="pwd">비밀번호</label>
+          </div>
+        </div>
+        <button
+          className="btn btn-lg btn-success w-75 mx-auto d-block mb-5"
+          onClick={() => this.signOn()}
+        >
+          회원가입
+        </button>
       </div>
     );
   },
 });
 
 var App = React.createClass({
+  getInitialState() {
+    return { index: 0 };
+  },
 
-	render(){
-		return (
-			<div>
-				
-			</div>
-		)
-	}
-})
+  setPageIndex(index) {
+    this.setState({ index: index });
+  },
 
-React.render(<LoginPage />, document.getElementById("app"));
+  render() {
+    return [
+      <LoginPage setPageIndex={this.setPageIndex} />,
+      <SignOnPage setPageIndex={this.setPageIndex} />,
+      <ChatApp />,
+    ][this.state.index];
+  },
+});
+
+React.render(<App />, document.getElementById("app"));

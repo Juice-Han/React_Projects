@@ -1,4 +1,7 @@
 // Keep track of which names are used so that there are no duplicates
+
+const connection = require('./db')
+
 var userNames = (function () {
   var names = {};
 
@@ -78,7 +81,7 @@ module.exports = function (socket) {
       userNames.free(oldName);
 
       name = data.name;
-      
+
       socket.broadcast.emit('change:name', {
         oldName: oldName,
         newName: name
@@ -97,4 +100,37 @@ module.exports = function (socket) {
     });
     userNames.free(name);
   });
+
+  socket.on('login', function (data) {
+    connection.query('select * from user where id=? and password=?', [data.id, data.password], (err, results) => {
+      if (err) {
+        console.log(err)
+        socket.emit('login', { state: 500 })
+      }
+      if (results.length === 0) {
+        return socket.emit('login', { state: 400 })
+      }
+      return socket.emit('login', { state: 200 })
+    })
+  })
+
+  socket.on('signOn', function (data) {
+    // 중복된 아이디 찾기
+    connection.query('select * from user where id=?', [data.id], (err, results) => {
+      if (err) {
+        console.log(err)
+        return socket.emit('signOn', { state: 500 })
+      }
+      if (results.length !== 0) {
+        return socket.emit('signOn', { state: 400 }) // 아이디가 중복되었을 경우 400 상태 전송
+      }
+      connection.query('insert into user (id,password) values (?,?)',[data.id, data.password],(err2, results2)=>{
+        if(err2){
+          console.log(err2)
+          return socket.emit('signOn', {state: 500})
+        }
+        return socket.emit('signOn', {state: 200}) // 계정 생성 완료
+      })
+    })
+  })
 };

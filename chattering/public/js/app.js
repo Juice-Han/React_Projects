@@ -228,13 +228,39 @@ var ChatApp = React.createClass({
 var LoginPage = React.createClass({
   displayName: "LoginPage",
 
+  getInitialState: function getInitialState() {
+    return { id: "", password: "" };
+  },
+
+  componentDidMount: function componentDidMount() {
+    socket.on("login", this._checkLogin);
+  },
+
+  login: function login() {
+    var id = this.state.id;
+    var password = this.state.password;
+    socket.emit("login", { id: id, password: password });
+  },
+
+  _checkLogin: function _checkLogin(check) {
+    if (check.state === 200) {
+      this.props.setPageIndex(2);
+    } else if (check.state === 400) {
+      window.alert("계정이 없거나 비밀번호가 틀렸습니다!");
+    } else {
+      window.alert("서버에 문제가 생겼습니다.");
+    }
+  },
+
   render: function render() {
+    var _this2 = this;
+
     return React.createElement(
       "div",
       { className: "w-100" },
       React.createElement(
-        "form",
-        { method: "POST", action: "http://localhost:3000/login", className: "w-75 mx-auto" },
+        "div",
+        { className: "w-75 mx-auto" },
         React.createElement(
           "h1",
           { className: "h3 mb-3 fw-normal my-5" },
@@ -247,7 +273,10 @@ var LoginPage = React.createClass({
             type: "text",
             className: "form-control",
             id: "id",
-            placeholder: "아이디 입력..."
+            placeholder: "아이디 입력...",
+            onChange: function (e) {
+              return _this2.setState({ id: e.target.value });
+            }
           }),
           React.createElement(
             "label",
@@ -262,7 +291,10 @@ var LoginPage = React.createClass({
             type: "password",
             className: "form-control",
             id: "pwd",
-            placeholder: "Password"
+            placeholder: "Password",
+            onChange: function (e) {
+              return _this2.setState({ password: e.target.value });
+            }
           }),
           React.createElement(
             "label",
@@ -272,13 +304,116 @@ var LoginPage = React.createClass({
         ),
         React.createElement(
           "button",
-          { className: "w-100 btn btn-lg btn-primary mb-2", type: "submit" },
+          {
+            className: "w-100 btn btn-lg btn-primary mb-2",
+            onClick: function () {
+              return _this2.login();
+            }
+          },
           "로그인"
         )
       ),
       React.createElement(
         "button",
-        { className: "btn btn-lg btn-secondary w-75 mx-auto d-block mb-5" },
+        {
+          className: "btn btn-lg btn-secondary w-75 mx-auto d-block mb-5",
+          onClick: function () {
+            return _this2.props.setPageIndex(1);
+          }
+        },
+        "회원가입"
+      )
+    );
+  }
+});
+
+var SignOnPage = React.createClass({
+  displayName: "SignOnPage",
+
+  componentDidMount: function componentDidMount() {
+    socket.on("signOn", this._checkSignOn);
+  },
+
+  _checkSignOn: function _checkSignOn(check) {
+    if (check.state === 400) {
+      window.alert("아이디가 중복되었습니다. 다른 아이디를 사용해주세요!");
+    } else if (check.state === 200) {
+      window.alert("계정이 생성되었습니다!");
+      this.props.setPageIndex(0);
+    } else {
+      window.alert("서버에 문제가 생겼습니다.");
+    }
+  },
+
+  getInitialState: function getInitialState() {
+    return { id: "", password: "" };
+  },
+
+  signOn: function signOn() {
+    var id = this.state.id;
+    var password = this.state.password;
+    socket.emit("signOn", { id: id, password: password });
+  },
+
+  render: function render() {
+    var _this3 = this;
+
+    return React.createElement(
+      "div",
+      { className: "w-100" },
+      React.createElement(
+        "div",
+        { className: "w-75 mx-auto" },
+        React.createElement(
+          "h1",
+          { className: "h3 mb-3 fw-normal my-5" },
+          "회원가입 페이지"
+        ),
+        React.createElement(
+          "div",
+          { className: "form-floating mb-3" },
+          React.createElement("input", {
+            type: "text",
+            className: "form-control",
+            id: "id",
+            placeholder: "아이디 입력...",
+            onChange: function (e) {
+              return _this3.setState({ id: e.target.value });
+            }
+          }),
+          React.createElement(
+            "label",
+            { "for": "id" },
+            "아이디"
+          )
+        ),
+        React.createElement(
+          "div",
+          { className: "form-floating mb-3" },
+          React.createElement("input", {
+            type: "password",
+            className: "form-control",
+            id: "pwd",
+            placeholder: "Password",
+            onChange: function (e) {
+              return _this3.setState({ password: e.target.value });
+            }
+          }),
+          React.createElement(
+            "label",
+            { "for": "pwd" },
+            "비밀번호"
+          )
+        )
+      ),
+      React.createElement(
+        "button",
+        {
+          className: "btn btn-lg btn-success w-75 mx-auto d-block mb-5",
+          onClick: function () {
+            return _this3.signOn();
+          }
+        },
         "회원가입"
       )
     );
@@ -288,12 +423,20 @@ var LoginPage = React.createClass({
 var App = React.createClass({
   displayName: "App",
 
+  getInitialState: function getInitialState() {
+    return { index: 0 };
+  },
+
+  setPageIndex: function setPageIndex(index) {
+    this.setState({ index: index });
+  },
+
   render: function render() {
-    return React.createElement("div", null);
+    return [React.createElement(LoginPage, { setPageIndex: this.setPageIndex }), React.createElement(SignOnPage, { setPageIndex: this.setPageIndex }), React.createElement(ChatApp, null)][this.state.index];
   }
 });
 
-React.render(React.createElement(LoginPage, null), document.getElementById("app"));
+React.render(React.createElement(App, null), document.getElementById("app"));
 /* <div> */ /* </div> */
 
 },{"react":157}],2:[function(require,module,exports){
