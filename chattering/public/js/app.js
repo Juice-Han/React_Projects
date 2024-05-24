@@ -157,7 +157,14 @@ var ChatApp = React.createClass({
   displayName: "ChatApp",
 
   getInitialState: function getInitialState() {
-    return { users: [], messages: [], text: "" };
+    return {
+      users: [],
+      messages: [],
+      text: "",
+      roomName: "",
+      rooms: [],
+      canMakeRoom: false
+    };
   },
 
   componentDidMount: function componentDidMount() {
@@ -206,10 +213,122 @@ var ChatApp = React.createClass({
     });
   },
 
+  createChatRoom: function createChatRoom(roomName) {
+    var _this2 = this;
+
+    socket.emit("create:room", { roomName: roomName }, function (result) {
+      if (result) {
+        alert("방 생성 완료!");
+        _this2.setState({ canMakeRoom: false });
+      }
+    });
+  },
+
+  findChatRoom: function findChatRoom(roomName) {
+    var _this3 = this;
+
+    socket.emit("find:room", { roomName: roomName }, function (results) {
+      if (results.length !== 0) {
+        _this3.setState({ rooms: results });
+        _this3.setState({ canMakeRoom: false });
+      } else {
+        _this3.setState({ canMakeRoom: true });
+        _this3.setState({ rooms: [] });
+      }
+    });
+  },
+
   render: function render() {
+    var _this4 = this;
+
     return React.createElement(
       "div",
-      null,
+      { className: "d-flex border border-2 border-primary-subtle" },
+      React.createElement(
+        "div",
+        { className: "side border-end border-1" },
+        React.createElement(
+          "div",
+          { className: "container text-center mb-3" },
+          React.createElement(
+            "h4",
+            { className: "mb-2" },
+            "채팅방 검색"
+          ),
+          React.createElement("input", {
+            onChange: function (e) {
+              return _this4.setState({ roomName: e.target.value });
+            }
+          }),
+          React.createElement(
+            "button",
+            { onClick: function () {
+                return _this4.findChatRoom(_this4.state.roomName);
+              } },
+            "검색"
+          )
+        ),
+        React.createElement(
+          "div",
+          { className: "container" },
+          this.state.canMakeRoom && React.createElement(
+            "div",
+            { className: "mb-3" },
+            React.createElement(
+              "h5",
+              null,
+              "찾으시는 방이 존재하지 않습니다."
+            ),
+            React.createElement(
+              "span",
+              null,
+              "방을 만드시겠습니까? "
+            ),
+            React.createElement(
+              "button",
+              {
+                onClick: function () {
+                  return _this4.createChatRoom(_this4.state.roomName);
+                }
+              },
+              "확인"
+            ),
+            React.createElement(
+              "button",
+              { onClick: function () {
+                  return _this4.setState({ canMakeRoom: false });
+                } },
+              "취소"
+            )
+          ),
+          React.createElement(
+            "h5",
+            null,
+            "채팅방 목록"
+          ),
+          this.state.rooms.length !== 0 && this.state.rooms.map(function (room, idx) {
+            return React.createElement(
+              "div",
+              { className: "card mb-3", key: idx },
+              React.createElement(
+                "div",
+                { className: "card-body" },
+                React.createElement(
+                  "h5",
+                  { className: "card-title" },
+                  "방 제목: ",
+                  room.name
+                ),
+                React.createElement(
+                  "button",
+                  { className: "btn btn-primary" },
+                  "채팅방 입장"
+                )
+              )
+            );
+          })
+        )
+      ),
       React.createElement(
         "div",
         { className: "center" },
@@ -253,11 +372,11 @@ var LoginPage = React.createClass({
   },
 
   render: function render() {
-    var _this2 = this;
+    var _this5 = this;
 
     return React.createElement(
       "div",
-      { className: "w-100" },
+      { className: "w-50 border border-3 border-primary-subtle mx-auto" },
       React.createElement(
         "div",
         { className: "w-75 mx-auto" },
@@ -275,7 +394,7 @@ var LoginPage = React.createClass({
             id: "id",
             placeholder: "아이디 입력...",
             onChange: function (e) {
-              return _this2.setState({ id: e.target.value });
+              return _this5.setState({ id: e.target.value });
             }
           }),
           React.createElement(
@@ -293,7 +412,7 @@ var LoginPage = React.createClass({
             id: "pwd",
             placeholder: "Password",
             onChange: function (e) {
-              return _this2.setState({ password: e.target.value });
+              return _this5.setState({ password: e.target.value });
             }
           }),
           React.createElement(
@@ -307,7 +426,7 @@ var LoginPage = React.createClass({
           {
             className: "w-100 btn btn-lg btn-primary mb-2",
             onClick: function () {
-              return _this2.login();
+              return _this5.login();
             }
           },
           "로그인"
@@ -318,7 +437,7 @@ var LoginPage = React.createClass({
         {
           className: "btn btn-lg btn-secondary w-75 mx-auto d-block mb-5",
           onClick: function () {
-            return _this2.props.setPageIndex(1);
+            return _this5.props.setPageIndex(1);
           }
         },
         "회원가입"
@@ -330,37 +449,33 @@ var LoginPage = React.createClass({
 var SignOnPage = React.createClass({
   displayName: "SignOnPage",
 
-  componentDidMount: function componentDidMount() {
-    socket.on("signOn", this._checkSignOn);
-  },
-
-  _checkSignOn: function _checkSignOn(check) {
-    if (check.state === 400) {
-      window.alert("아이디가 중복되었습니다. 다른 아이디를 사용해주세요!");
-    } else if (check.state === 200) {
-      window.alert("계정이 생성되었습니다!");
-      this.props.setPageIndex(0);
-    } else {
-      window.alert("서버에 문제가 생겼습니다.");
-    }
-  },
-
   getInitialState: function getInitialState() {
     return { id: "", password: "" };
   },
 
   signOn: function signOn() {
+    var _this6 = this;
+
     var id = this.state.id;
     var password = this.state.password;
-    socket.emit("signOn", { id: id, password: password });
+    socket.emit("signOn", { id: id, password: password }, function (result) {
+      if (result === 400) {
+        window.alert("아이디가 중복되었습니다. 다른 아이디를 사용해주세요!");
+      } else if (result === 200) {
+        window.alert("계정이 생성되었습니다!");
+        _this6.props.setPageIndex(0);
+      } else {
+        window.alert("서버에 문제가 생겼습니다.");
+      }
+    });
   },
 
   render: function render() {
-    var _this3 = this;
+    var _this7 = this;
 
     return React.createElement(
       "div",
-      { className: "w-100" },
+      { className: "w-50 border border-3 border-primary-subtle mx-auto" },
       React.createElement(
         "div",
         { className: "w-75 mx-auto" },
@@ -378,7 +493,7 @@ var SignOnPage = React.createClass({
             id: "id",
             placeholder: "아이디 입력...",
             onChange: function (e) {
-              return _this3.setState({ id: e.target.value });
+              return _this7.setState({ id: e.target.value });
             }
           }),
           React.createElement(
@@ -396,7 +511,7 @@ var SignOnPage = React.createClass({
             id: "pwd",
             placeholder: "Password",
             onChange: function (e) {
-              return _this3.setState({ password: e.target.value });
+              return _this7.setState({ password: e.target.value });
             }
           }),
           React.createElement(
@@ -409,12 +524,26 @@ var SignOnPage = React.createClass({
       React.createElement(
         "button",
         {
-          className: "btn btn-lg btn-success w-75 mx-auto d-block mb-5",
+          className: "btn btn-lg btn-success w-75 mx-auto d-block mb-2",
           onClick: function () {
-            return _this3.signOn();
+            return _this7.signOn();
           }
         },
         "회원가입"
+      ),
+      React.createElement(
+        "div",
+        { className: "w-100 d-flex justify-content-center mb-5" },
+        React.createElement(
+          "button",
+          {
+            className: "w-75 btn btn-lg btn-secondary",
+            onClick: function () {
+              return _this7.props.setPageIndex(0);
+            }
+          },
+          "로그인 페이지 가기"
+        )
       )
     );
   }
@@ -424,7 +553,7 @@ var App = React.createClass({
   displayName: "App",
 
   getInitialState: function getInitialState() {
-    return { index: 0 };
+    return { index: 2 };
   },
 
   setPageIndex: function setPageIndex(index) {

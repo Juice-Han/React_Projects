@@ -1,7 +1,6 @@
 body{
-	width: 600px;
+	width: 900px;
 	margin: 0 auto;
-	border: 5px solid #02499B;
 	margin-top: 5%;
 }
 .users{
@@ -27,4 +26,8 @@ body{
 	margin-left: 3%;
 	width: 520px;
 	height: 40px;
+}
+.side{
+	width: 300px;
+	height: 700px;
 }

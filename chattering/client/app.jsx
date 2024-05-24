@@ -113,7 +113,14 @@ var ChangeNameForm = React.createClass({
 
 var ChatApp = React.createClass({
   getInitialState() {
-    return { users: [], messages: [], text: "" };
+    return {
+      users: [],
+      messages: [],
+      text: "",
+      roomName: "",
+      rooms: [],
+      canMakeRoom: false,
+    };
   },
 
   componentDidMount() {
@@ -155,9 +162,69 @@ var ChatApp = React.createClass({
     });
   },
 
+  createChatRoom(roomName) {
+    socket.emit("create:room", { roomName: roomName }, (result) => {
+      if (result) {
+        alert("방 생성 완료!");
+        this.setState({ canMakeRoom: false });
+      }
+    });
+  },
+
+  findChatRoom(roomName) {
+    socket.emit("find:room", { roomName: roomName }, (results) => {
+      if (results.length !== 0) {
+        this.setState({ rooms: results });
+        this.setState({ canMakeRoom: false });
+      } else {
+        this.setState({ canMakeRoom: true });
+        this.setState({ rooms: [] });
+      }
+    });
+  },
+
   render() {
     return (
-      <div>
+      <div className="d-flex border border-2 border-primary-subtle">
+        <div className="side border-end border-1">
+          <div className="container text-center mb-3">
+            <h4 className="mb-2">채팅방 검색</h4>
+            <input
+              onChange={(e) => this.setState({ roomName: e.target.value })}
+            />
+            <button onClick={() => this.findChatRoom(this.state.roomName)}>
+              검색
+            </button>
+          </div>
+          <div className="container">
+            {this.state.canMakeRoom && (
+              <div className="mb-3">
+                <h5>찾으시는 방이 존재하지 않습니다.</h5>
+                <span>방을 만드시겠습니까? </span>
+                <button
+                  onClick={() => this.createChatRoom(this.state.roomName)}
+                >
+                  확인
+                </button>
+                <button onClick={() => this.setState({ canMakeRoom: false })}>
+                  취소
+                </button>
+              </div>
+            )}
+            <h5>채팅방 목록</h5>
+            {this.state.rooms.length !== 0 &&
+              this.state.rooms.map((room, idx) => {
+                return (
+                  <div className="card mb-3" key={idx}>
+                    <div className="card-body">
+                      <h5 className="card-title">방 제목: {room.name}</h5>
+                      <button className="btn btn-primary">채팅방 입장</button>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
         <div className="center">
           <UsersList users={this.state.users} />
           <ChangeNameForm onChangeName={this.handleChangeName} />
@@ -201,7 +268,7 @@ var LoginPage = React.createClass({
 
   render() {
     return (
-      <div className="w-100">
+      <div className="w-50 border border-3 border-primary-subtle mx-auto">
         <div className="w-75 mx-auto">
           <h1 className="h3 mb-3 fw-normal my-5">로그인 페이지</h1>
           <div className="form-floating mb-3">
@@ -243,21 +310,6 @@ var LoginPage = React.createClass({
 });
 
 var SignOnPage = React.createClass({
-  componentDidMount() {
-    socket.on("signOn", this._checkSignOn);
-  },
-
-  _checkSignOn(check) {
-    if (check.state === 400) {
-      window.alert("아이디가 중복되었습니다. 다른 아이디를 사용해주세요!");
-    } else if (check.state === 200) {
-      window.alert("계정이 생성되었습니다!");
-      this.props.setPageIndex(0);
-    } else {
-      window.alert("서버에 문제가 생겼습니다.");
-    }
-  },
-
   getInitialState() {
     return { id: "", password: "" };
   },
@@ -265,12 +317,21 @@ var SignOnPage = React.createClass({
   signOn() {
     const id = this.state.id;
     const password = this.state.password;
-    socket.emit("signOn", { id, password });
+    socket.emit("signOn", { id, password }, (result) => {
+      if (result === 400) {
+        window.alert("아이디가 중복되었습니다. 다른 아이디를 사용해주세요!");
+      } else if (result === 200) {
+        window.alert("계정이 생성되었습니다!");
+        this.props.setPageIndex(0);
+      } else {
+        window.alert("서버에 문제가 생겼습니다.");
+      }
+    });
   },
 
   render() {
     return (
-      <div className="w-100">
+      <div className="w-50 border border-3 border-primary-subtle mx-auto">
         <div className="w-75 mx-auto">
           <h1 className="h3 mb-3 fw-normal my-5">회원가입 페이지</h1>
           <div className="form-floating mb-3">
@@ -295,11 +356,19 @@ var SignOnPage = React.createClass({
           </div>
         </div>
         <button
-          className="btn btn-lg btn-success w-75 mx-auto d-block mb-5"
+          className="btn btn-lg btn-success w-75 mx-auto d-block mb-2"
           onClick={() => this.signOn()}
         >
           회원가입
         </button>
+        <div className="w-100 d-flex justify-content-center mb-5">
+          <button
+            className="w-75 btn btn-lg btn-secondary"
+            onClick={() => this.props.setPageIndex(0)}
+          >
+            로그인 페이지 가기
+          </button>
+        </div>
       </div>
     );
   },
@@ -307,7 +376,7 @@ var SignOnPage = React.createClass({
 
 var App = React.createClass({
   getInitialState() {
-    return { index: 0 };
+    return { index: 2 };
   },
 
   setPageIndex(index) {
