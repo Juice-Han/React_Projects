@@ -52,26 +52,43 @@ var userNames = (function () {
 }());
 
 var roomNames = (function () {
-  var rooms = {chat1: {name: 'chat1'}};
+  var rooms = { chat1: { name: 'chat1', messages: [] } };
 
   var createRoom = function (name) {
-    rooms[name] = {name: name}
+    rooms[name] = { name: name, messages: [] }
   }
 
   var findRoom = function (name) {
     var roomKeys = Object.keys(rooms)
     var filteredRooms = []
-    for(let i = 0; i<roomKeys.length; i++){
-      if(rooms[roomKeys[i]].name.includes(name)){
+    for (let i = 0; i < roomKeys.length; i++) {
+      if (rooms[roomKeys[i]].name.includes(name)) {
         filteredRooms.push(rooms[roomKeys[i]])
       }
     }
     return filteredRooms
   }
 
+  var chatRecord = function (roomName) {
+    if (!rooms[roomName]) {
+      return false
+    }
+    return rooms[roomName].messages
+  }
+
+  var addChat = function (roomName, message) {
+    if (!rooms[roomName]) {
+      return false
+    }
+    rooms[roomName].messages.push(message)
+    return true
+  }
+
   return {
     createRoom: createRoom,
-    findRoom: findRoom
+    findRoom: findRoom,
+    chatRecord: chatRecord,
+    addChat: addChat,
   }
 }())
 
@@ -80,22 +97,38 @@ module.exports = function (socket) {
   var name = userNames.getGuestName();
 
   // send the new user their name and a list of users
-  socket.emit('init', {
-    name: name,
-    users: userNames.get()
-  });
+  // socket.emit('init', {
+  //   name: name,
+  //   users: userNames.get()
+  // });
 
   // notify other clients that a new user has joined
-  socket.broadcast.emit('user:join', {
-    name: name
-  });
+  socket.on('user:join', function (data, fn) {
+    var record = roomNames.chatRecord(data.roomName)
+    if (!record) {
+      return fn({ state: 400, messages: [] })
+    }
+    socket.broadcast.emit('user:join', {
+      name: data.name,
+    });
+    fn({ state: 200, messages: record })
+  })
+
 
   // broadcast a user's message to other users
-  socket.on('send:message', function (data) {
+  socket.on('send:message', function (data,fn) {
+    var result = roomNames.addChat(data.selectedRoomName, { user: data.message.user, text: data.message.text })
+    if (!result) {
+      return fn(false)
+    }
     socket.broadcast.emit('send:message', {
-      user: name,
-      text: data.text
+      roomName: data.selectedRoomName,
+      message: {
+        user: data.message.user,
+        text: data.message.text
+      }
     });
+    fn(true)
   });
 
   // validate a user's name change, and broadcast it on success
@@ -125,20 +158,20 @@ module.exports = function (socket) {
     userNames.free(name);
   });
 
-  socket.on('login', function (data) {
+  socket.on('login', function (data, fn) {
     connection.query('select * from user where id=? and password=?', [data.id, data.password], (err, results) => {
       if (err) {
         console.log(err)
-        socket.emit('login', { state: 500 })
+        return fn(500)
       }
       if (results.length === 0) {
-        return socket.emit('login', { state: 400 })
+        return fn(400)
       }
-      return socket.emit('login', { state: 200 })
+      return fn(200)
     })
   })
 
-  socket.on('signOn', function (data,fn) {
+  socket.on('signOn', function (data, fn) {
     // 중복된 아이디 찾기
     connection.query('select * from user where id=?', [data.id], (err, results) => {
       if (err) {
@@ -164,7 +197,7 @@ module.exports = function (socket) {
     fn(true)
   })
 
-  socket.on('find:room', function(data, fn){
+  socket.on('find:room', function (data, fn) {
     var roomName = data.roomName
     var results = roomNames.findRoom(roomName)
     fn(results)

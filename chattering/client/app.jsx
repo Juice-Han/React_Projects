@@ -120,33 +120,48 @@ var ChatApp = React.createClass({
       roomName: "",
       rooms: [],
       canMakeRoom: false,
+      selectedRoomName: "",
+      showRoom: false,
     };
   },
 
   componentDidMount() {
-    socket.on("init", this._initialize);
+    // socket.on("init", this._initialize);
+    this.setState({ user: this.props.userId });
     socket.on("send:message", this._messageRecieve);
     socket.on("user:join", this._userJoined);
     socket.on("user:left", this._userLeft);
     socket.on("change:name", this._userChangedName);
   },
 
-  _initialize(data) {
-    var { users, name } = data;
-    this.setState({ users, user: name });
-  },
+  // _initialize(data) {
+  //   var { users, name } = data;
+  //   this.setState({ users, user: name });
+  // },
 
-  _messageRecieve(message) {
-    var { messages } = this.state;
-    messages.push(message);
-    this.setState({ messages });
+  _messageRecieve(data) {
+    if (this.state.selectedRoomName === data.roomName) {
+      var { messages } = this.state;
+      messages.push(data.message);
+      this.setState({ messages });
+    }
   },
 
   handleMessageSubmit(message) {
     var { messages } = this.state;
-    messages.push(message);
-    this.setState({ messages });
-    socket.emit("send:message", message);
+    console.log(this.state.user)
+    socket.emit(
+      "send:message",
+      { message: message, selectedRoomName: this.state.selectedRoomName },
+      (result) => {
+        if (!result) {
+          return;
+        } else {
+          messages.push(message);
+          this.setState({ messages });
+        }
+      }
+    );
   },
 
   handleChangeName(newName) {
@@ -181,6 +196,16 @@ var ChatApp = React.createClass({
         this.setState({ rooms: [] });
       }
     });
+  },
+
+  selectChatRoom(selectedRoomName) {
+    this.setState({ selectedRoomName: selectedRoomName });
+    socket.emit(
+      "user:join",
+      { name: this.props.userId, roomName: selectedRoomName },
+      (results) => {}
+    );
+    this.setState({ showRoom: true });
   },
 
   render() {
@@ -218,24 +243,36 @@ var ChatApp = React.createClass({
                   <div className="card mb-3" key={idx}>
                     <div className="card-body">
                       <h5 className="card-title">방 제목: {room.name}</h5>
-                      <button className="btn btn-primary">채팅방 입장</button>
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => this.selectChatRoom(room.name)}
+                      >
+                        채팅방 입장
+                      </button>
                     </div>
                   </div>
                 );
               })}
           </div>
         </div>
-        <div className="center">
-          <UsersList users={this.state.users} />
-          <ChangeNameForm onChangeName={this.handleChangeName} />
-          {/* <div> */}
-          <MessageList messages={this.state.messages} />
-          <MessageForm
-            onMessageSubmit={this.handleMessageSubmit}
-            user={this.state.user}
-          />
-          {/* </div> */}
-        </div>
+        {this.state.showRoom ? (
+          <div className="center">
+            <div>
+              <h3 className="text-center">
+                방 제목 : {this.state.selectedRoomName}
+              </h3>
+            </div>
+            {/* <div> */}
+            <MessageList messages={this.state.messages} />
+            <MessageForm
+              onMessageSubmit={this.handleMessageSubmit}
+              user={this.state.user}
+            />
+            {/* </div> */}
+          </div>
+        ) : (
+          <p>채팅방에 입장해주세요.</p>
+        )}
       </div>
     );
   },
@@ -246,24 +283,18 @@ var LoginPage = React.createClass({
     return { id: "", password: "" };
   },
 
-  componentDidMount() {
-    socket.on("login", this._checkLogin);
-  },
-
   login() {
-    const id = this.state.id;
+    const id = this.props.userId;
     const password = this.state.password;
-    socket.emit("login", { id, password });
-  },
-
-  _checkLogin(check) {
-    if (check.state === 200) {
-      this.props.setPageIndex(2);
-    } else if (check.state === 400) {
-      window.alert("계정이 없거나 비밀번호가 틀렸습니다!");
-    } else {
-      window.alert("서버에 문제가 생겼습니다.");
-    }
+    socket.emit("login", { id, password }, (result) => {
+      if (result === 200) {
+        this.props.setPageIndex(2);
+      } else if (result === 400) {
+        window.alert("계정이 없거나 비밀번호가 틀렸습니다!");
+      } else {
+        window.alert("서버에 문제가 생겼습니다.");
+      }
+    });
   },
 
   render() {
@@ -277,7 +308,7 @@ var LoginPage = React.createClass({
               className="form-control"
               id="id"
               placeholder="아이디 입력..."
-              onChange={(e) => this.setState({ id: e.target.value })}
+              onChange={(e) => this.props.setUserId(e.target.value)}
             />
             <label for="id">아이디</label>
           </div>
@@ -376,18 +407,22 @@ var SignOnPage = React.createClass({
 
 var App = React.createClass({
   getInitialState() {
-    return { index: 2 };
+    return { index: 0, userId: "" };
   },
 
   setPageIndex(index) {
     this.setState({ index: index });
   },
 
+  setUserId(id) {
+    this.setState({ userId: id });
+  },
+
   render() {
     return [
-      <LoginPage setPageIndex={this.setPageIndex} />,
+      <LoginPage setPageIndex={this.setPageIndex} userId={this.state.userId} setUserId={this.setUserId} />,
       <SignOnPage setPageIndex={this.setPageIndex} />,
-      <ChatApp />,
+      <ChatApp userId={this.state.userId} />,
     ][this.state.index];
   },
 });
