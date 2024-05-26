@@ -52,10 +52,10 @@ var userNames = (function () {
 }());
 
 var roomNames = (function () {
-  var rooms = { chat1: { name: 'chat1', messages: [] } };
+  var rooms = { chat1: { name: 'chat1', messages: [], users: [] } };
 
   var createRoom = function (name) {
-    rooms[name] = { name: name, messages: [] }
+    rooms[name] = { name: name, messages: [], users: [] }
   }
 
   var findRoom = function (name) {
@@ -73,7 +73,7 @@ var roomNames = (function () {
     if (!rooms[roomName]) {
       return false
     }
-    return rooms[roomName].messages
+    return rooms[roomName]
   }
 
   var addChat = function (roomName, message) {
@@ -84,11 +84,34 @@ var roomNames = (function () {
     return true
   }
 
+  var addUser = function (roomName, userId){
+    if(!rooms[roomName]){
+      return false
+    }
+    rooms[roomName].users.push(userId)
+    return true
+  }
+
+  var freeUser = function(roomName, userId){
+    if(!rooms[roomName]){
+      return false
+    }
+    for(let i = 0; i<rooms[roomName].users.length; i++){
+      if(rooms[roomName].users[i] === userId){
+        rooms[roomName].users.splice(i,1)
+        return true
+      } 
+    }
+    return false
+  }
+
   return {
     createRoom: createRoom,
     findRoom: findRoom,
     chatRecord: chatRecord,
     addChat: addChat,
+    addUser: addUser,
+    freeUser: freeUser
   }
 }())
 
@@ -105,13 +128,14 @@ module.exports = function (socket) {
   // notify other clients that a new user has joined
   socket.on('user:join', function (data, fn) {
     var record = roomNames.chatRecord(data.roomName)
-    if (!record) {
-      return fn({ state: 400, messages: [] })
+    var addUser = roomNames.addUser(data.roomName, data.name)
+    if (!record || !addUser) {
+      return fn({ state: 400 })
     }
     socket.broadcast.emit('user:join', {
       name: data.name,
     });
-    fn({ state: 200, messages: record })
+    fn({ state: 200, messages: record.messages, users: record.users })
   })
 
 

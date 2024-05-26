@@ -160,7 +160,9 @@ var ChatApp = React.createClass({
     }
   },
 
-  _userJoined() {},
+  _userJoined(data) {
+    this.setState({users: [...this.state.users, data.name]})
+  },
 
   _userLeft() {},
 
@@ -221,7 +223,8 @@ var ChatApp = React.createClass({
       { name: this.props.userId, roomName: selectedRoomName },
       (results) => {
         if (results.state === 400) return;
-        this.setState({ messages: results.messages });
+        console.log(results)
+        this.setState({ messages: results.messages, users: [...results.users] });
       }
     );
     this.setState({ showRoom: true });
@@ -289,6 +292,9 @@ var ChatApp = React.createClass({
             <MessageForm
               onMessageSubmit={this.handleMessageSubmit}
               user={this.state.user}
+            />
+            <UsersList
+              users={this.state.users}
             />
             {/* </div> */}
           </div>
