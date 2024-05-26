@@ -23,8 +23,8 @@ var Message = React.createClass({
   render() {
     return (
       <div className="message">
-        <strong>{this.props.user} :</strong>
-        <span>{this.props.text}</span>
+        <p className="fs-5 my-0">{this.props.user}</p>
+        <p>{this.props.text}</p>
       </div>
     );
   },
@@ -36,6 +36,13 @@ var MessageList = React.createClass({
       <div className="messages">
         <h2> 채팅방 </h2>
         {this.props.messages.map((message, i) => {
+          if (message.user === this.props.userId) {
+            return (
+              <span className="text-end">
+                <Message key={i} user={message.user} text={message.text} />
+              </span>
+            );
+          }
           return <Message key={i} user={message.user} text={message.text} />;
         })}
       </div>
@@ -149,7 +156,6 @@ var ChatApp = React.createClass({
 
   handleMessageSubmit(message) {
     var { messages } = this.state;
-    console.log(this.state.user)
     socket.emit(
       "send:message",
       { message: message, selectedRoomName: this.state.selectedRoomName },
@@ -203,7 +209,10 @@ var ChatApp = React.createClass({
     socket.emit(
       "user:join",
       { name: this.props.userId, roomName: selectedRoomName },
-      (results) => {}
+      (results) => {
+        if (results.state === 400) return;
+        this.setState({ messages: results.messages });
+      }
     );
     this.setState({ showRoom: true });
   },
@@ -263,7 +272,10 @@ var ChatApp = React.createClass({
               </h3>
             </div>
             {/* <div> */}
-            <MessageList messages={this.state.messages} />
+            <MessageList
+              messages={this.state.messages}
+              userId={this.props.userId}
+            />
             <MessageForm
               onMessageSubmit={this.handleMessageSubmit}
               user={this.state.user}
@@ -420,7 +432,11 @@ var App = React.createClass({
 
   render() {
     return [
-      <LoginPage setPageIndex={this.setPageIndex} userId={this.state.userId} setUserId={this.setUserId} />,
+      <LoginPage
+        setPageIndex={this.setPageIndex}
+        userId={this.state.userId}
+        setUserId={this.setUserId}
+      />,
       <SignOnPage setPageIndex={this.setPageIndex} />,
       <ChatApp userId={this.state.userId} />,
     ][this.state.index];

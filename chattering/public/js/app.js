@@ -40,13 +40,12 @@ var Message = React.createClass({
       "div",
       { className: "message" },
       React.createElement(
-        "strong",
-        null,
-        this.props.user,
-        " :"
+        "p",
+        { className: "fs-5 my-0" },
+        this.props.user
       ),
       React.createElement(
-        "span",
+        "p",
         null,
         this.props.text
       )
@@ -58,6 +57,8 @@ var MessageList = React.createClass({
   displayName: "MessageList",
 
   render: function render() {
+    var _this = this;
+
     return React.createElement(
       "div",
       { className: "messages" },
@@ -67,6 +68,13 @@ var MessageList = React.createClass({
         " 채팅방 "
       ),
       this.props.messages.map(function (message, i) {
+        if (message.user === _this.props.userId) {
+          return React.createElement(
+            "span",
+            { className: "text-end" },
+            React.createElement(Message, { key: i, user: message.user, text: message.text })
+          );
+        }
         return React.createElement(Message, { key: i, user: message.user, text: message.text });
       })
     );
@@ -193,70 +201,74 @@ var ChatApp = React.createClass({
   },
 
   handleMessageSubmit: function handleMessageSubmit(message) {
-    var _this = this;
+    var _this2 = this;
 
     var messages = this.state.messages;
 
-    console.log(this.state.user);
     socket.emit("send:message", { message: message, selectedRoomName: this.state.selectedRoomName }, function (result) {
       if (!result) {
         return;
       } else {
         messages.push(message);
-        _this.setState({ messages: messages });
+        _this2.setState({ messages: messages });
       }
     });
   },
 
   handleChangeName: function handleChangeName(newName) {
-    var _this2 = this;
+    var _this3 = this;
 
     var oldName = this.state.user;
     socket.emit("change:name", { name: newName }, function (result) {
       if (!result) {
         return alert("There was an error changing your name");
       }
-      var users = _this2.state.users;
+      var users = _this3.state.users;
 
       var index = users.indexOf(oldName);
       users.splice(index, 1, newName);
-      _this2.setState({ users: users, user: newName });
+      _this3.setState({ users: users, user: newName });
     });
   },
 
   createChatRoom: function createChatRoom(roomName) {
-    var _this3 = this;
+    var _this4 = this;
 
     socket.emit("create:room", { roomName: roomName }, function (result) {
       if (result) {
         alert("방 생성 완료!");
-        _this3.setState({ canMakeRoom: false });
+        _this4.setState({ canMakeRoom: false });
       }
     });
   },
 
   findChatRoom: function findChatRoom(roomName) {
-    var _this4 = this;
+    var _this5 = this;
 
     socket.emit("find:room", { roomName: roomName }, function (results) {
       if (results.length !== 0) {
-        _this4.setState({ rooms: results });
-        _this4.setState({ canMakeRoom: false });
+        _this5.setState({ rooms: results });
+        _this5.setState({ canMakeRoom: false });
       } else {
-        _this4.setState({ canMakeRoom: true });
-        _this4.setState({ rooms: [] });
+        _this5.setState({ canMakeRoom: true });
+        _this5.setState({ rooms: [] });
       }
     });
   },
 
   selectChatRoom: function selectChatRoom(selectedRoomName) {
+    var _this6 = this;
+
     this.setState({ selectedRoomName: selectedRoomName });
-    socket.emit("user:join", { name: this.props.userId, roomName: selectedRoomName }, function (results) {});
+    socket.emit("user:join", { name: this.props.userId, roomName: selectedRoomName }, function (results) {
+      if (results.state === 400) return;
+      _this6.setState({ messages: results.messages });
+    });
     this.setState({ showRoom: true });
   },
 
   render: function render() {
-    var _this5 = this;
+    var _this7 = this;
 
     return React.createElement(
       "div",
@@ -274,13 +286,13 @@ var ChatApp = React.createClass({
           ),
           React.createElement("input", {
             onChange: function (e) {
-              return _this5.setState({ roomName: e.target.value });
+              return _this7.setState({ roomName: e.target.value });
             }
           }),
           React.createElement(
             "button",
             { onClick: function () {
-                return _this5.findChatRoom(_this5.state.roomName);
+                return _this7.findChatRoom(_this7.state.roomName);
               } },
             "검색"
           )
@@ -305,7 +317,7 @@ var ChatApp = React.createClass({
               "button",
               {
                 onClick: function () {
-                  return _this5.createChatRoom(_this5.state.roomName);
+                  return _this7.createChatRoom(_this7.state.roomName);
                 }
               },
               "확인"
@@ -313,7 +325,7 @@ var ChatApp = React.createClass({
             React.createElement(
               "button",
               { onClick: function () {
-                  return _this5.setState({ canMakeRoom: false });
+                  return _this7.setState({ canMakeRoom: false });
                 } },
               "취소"
             )
@@ -341,7 +353,7 @@ var ChatApp = React.createClass({
                   {
                     className: "btn btn-primary",
                     onClick: function () {
-                      return _this5.selectChatRoom(room.name);
+                      return _this7.selectChatRoom(room.name);
                     }
                   },
                   "채팅방 입장"
@@ -364,7 +376,10 @@ var ChatApp = React.createClass({
             this.state.selectedRoomName
           )
         ),
-        React.createElement(MessageList, { messages: this.state.messages }),
+        React.createElement(MessageList, {
+          messages: this.state.messages,
+          userId: this.props.userId
+        }),
         React.createElement(MessageForm, {
           onMessageSubmit: this.handleMessageSubmit,
           user: this.state.user
@@ -386,13 +401,13 @@ var LoginPage = React.createClass({
   },
 
   login: function login() {
-    var _this6 = this;
+    var _this8 = this;
 
     var id = this.props.userId;
     var password = this.state.password;
     socket.emit("login", { id: id, password: password }, function (result) {
       if (result === 200) {
-        _this6.props.setPageIndex(2);
+        _this8.props.setPageIndex(2);
       } else if (result === 400) {
         window.alert("계정이 없거나 비밀번호가 틀렸습니다!");
       } else {
@@ -402,7 +417,7 @@ var LoginPage = React.createClass({
   },
 
   render: function render() {
-    var _this7 = this;
+    var _this9 = this;
 
     return React.createElement(
       "div",
@@ -424,106 +439,7 @@ var LoginPage = React.createClass({
             id: "id",
             placeholder: "아이디 입력...",
             onChange: function (e) {
-              return _this7.props.setUserId(e.target.value);
-            }
-          }),
-          React.createElement(
-            "label",
-            { "for": "id" },
-            "아이디"
-          )
-        ),
-        React.createElement(
-          "div",
-          { className: "form-floating mb-3" },
-          React.createElement("input", {
-            type: "password",
-            className: "form-control",
-            id: "pwd",
-            placeholder: "Password",
-            onChange: function (e) {
-              return _this7.setState({ password: e.target.value });
-            }
-          }),
-          React.createElement(
-            "label",
-            { "for": "pwd" },
-            "비밀번호"
-          )
-        ),
-        React.createElement(
-          "button",
-          {
-            className: "w-100 btn btn-lg btn-primary mb-2",
-            onClick: function () {
-              return _this7.login();
-            }
-          },
-          "로그인"
-        )
-      ),
-      React.createElement(
-        "button",
-        {
-          className: "btn btn-lg btn-secondary w-75 mx-auto d-block mb-5",
-          onClick: function () {
-            return _this7.props.setPageIndex(1);
-          }
-        },
-        "회원가입"
-      )
-    );
-  }
-});
-
-var SignOnPage = React.createClass({
-  displayName: "SignOnPage",
-
-  getInitialState: function getInitialState() {
-    return { id: "", password: "" };
-  },
-
-  signOn: function signOn() {
-    var _this8 = this;
-
-    var id = this.state.id;
-    var password = this.state.password;
-    socket.emit("signOn", { id: id, password: password }, function (result) {
-      if (result === 400) {
-        window.alert("아이디가 중복되었습니다. 다른 아이디를 사용해주세요!");
-      } else if (result === 200) {
-        window.alert("계정이 생성되었습니다!");
-        _this8.props.setPageIndex(0);
-      } else {
-        window.alert("서버에 문제가 생겼습니다.");
-      }
-    });
-  },
-
-  render: function render() {
-    var _this9 = this;
-
-    return React.createElement(
-      "div",
-      { className: "w-50 border border-3 border-primary-subtle mx-auto" },
-      React.createElement(
-        "div",
-        { className: "w-75 mx-auto" },
-        React.createElement(
-          "h1",
-          { className: "h3 mb-3 fw-normal my-5" },
-          "회원가입 페이지"
-        ),
-        React.createElement(
-          "div",
-          { className: "form-floating mb-3" },
-          React.createElement("input", {
-            type: "text",
-            className: "form-control",
-            id: "id",
-            placeholder: "아이디 입력...",
-            onChange: function (e) {
-              return _this9.setState({ id: e.target.value });
+              return _this9.props.setUserId(e.target.value);
             }
           }),
           React.createElement(
@@ -549,6 +465,105 @@ var SignOnPage = React.createClass({
             { "for": "pwd" },
             "비밀번호"
           )
+        ),
+        React.createElement(
+          "button",
+          {
+            className: "w-100 btn btn-lg btn-primary mb-2",
+            onClick: function () {
+              return _this9.login();
+            }
+          },
+          "로그인"
+        )
+      ),
+      React.createElement(
+        "button",
+        {
+          className: "btn btn-lg btn-secondary w-75 mx-auto d-block mb-5",
+          onClick: function () {
+            return _this9.props.setPageIndex(1);
+          }
+        },
+        "회원가입"
+      )
+    );
+  }
+});
+
+var SignOnPage = React.createClass({
+  displayName: "SignOnPage",
+
+  getInitialState: function getInitialState() {
+    return { id: "", password: "" };
+  },
+
+  signOn: function signOn() {
+    var _this10 = this;
+
+    var id = this.state.id;
+    var password = this.state.password;
+    socket.emit("signOn", { id: id, password: password }, function (result) {
+      if (result === 400) {
+        window.alert("아이디가 중복되었습니다. 다른 아이디를 사용해주세요!");
+      } else if (result === 200) {
+        window.alert("계정이 생성되었습니다!");
+        _this10.props.setPageIndex(0);
+      } else {
+        window.alert("서버에 문제가 생겼습니다.");
+      }
+    });
+  },
+
+  render: function render() {
+    var _this11 = this;
+
+    return React.createElement(
+      "div",
+      { className: "w-50 border border-3 border-primary-subtle mx-auto" },
+      React.createElement(
+        "div",
+        { className: "w-75 mx-auto" },
+        React.createElement(
+          "h1",
+          { className: "h3 mb-3 fw-normal my-5" },
+          "회원가입 페이지"
+        ),
+        React.createElement(
+          "div",
+          { className: "form-floating mb-3" },
+          React.createElement("input", {
+            type: "text",
+            className: "form-control",
+            id: "id",
+            placeholder: "아이디 입력...",
+            onChange: function (e) {
+              return _this11.setState({ id: e.target.value });
+            }
+          }),
+          React.createElement(
+            "label",
+            { "for": "id" },
+            "아이디"
+          )
+        ),
+        React.createElement(
+          "div",
+          { className: "form-floating mb-3" },
+          React.createElement("input", {
+            type: "password",
+            className: "form-control",
+            id: "pwd",
+            placeholder: "Password",
+            onChange: function (e) {
+              return _this11.setState({ password: e.target.value });
+            }
+          }),
+          React.createElement(
+            "label",
+            { "for": "pwd" },
+            "비밀번호"
+          )
         )
       ),
       React.createElement(
@@ -556,7 +571,7 @@ var SignOnPage = React.createClass({
         {
           className: "btn btn-lg btn-success w-75 mx-auto d-block mb-2",
           onClick: function () {
-            return _this9.signOn();
+            return _this11.signOn();
           }
         },
         "회원가입"
@@ -569,7 +584,7 @@ var SignOnPage = React.createClass({
           {
             className: "w-75 btn btn-lg btn-secondary",
             onClick: function () {
-              return _this9.props.setPageIndex(0);
+              return _this11.props.setPageIndex(0);
             }
           },
           "로그인 페이지 가기"
@@ -595,7 +610,11 @@ var App = React.createClass({
   },
 
   render: function render() {
-    return [React.createElement(LoginPage, { setPageIndex: this.setPageIndex, userId: this.state.userId, setUserId: this.setUserId }), React.createElement(SignOnPage, { setPageIndex: this.setPageIndex }), React.createElement(ChatApp, { userId: this.state.userId })][this.state.index];
+    return [React.createElement(LoginPage, {
+      setPageIndex: this.setPageIndex,
+      userId: this.state.userId,
+      setUserId: this.setUserId
+    }), React.createElement(SignOnPage, { setPageIndex: this.setPageIndex }), React.createElement(ChatApp, { userId: this.state.userId })][this.state.index];
   }
 });
 
