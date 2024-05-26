@@ -56,12 +56,18 @@ var Message = React.createClass({
 var MessageList = React.createClass({
   displayName: "MessageList",
 
+  componentDidUpdate: function componentDidUpdate() {
+    var chattingBox = document.querySelector(".messages");
+    if (!chattingBox) return;
+    chattingBox.scrollTop = chattingBox.scrollHeight;
+  },
+
   render: function render() {
     var _this = this;
 
     return React.createElement(
       "div",
-      { className: "messages" },
+      { className: "messages overflow-auto" },
       React.createElement(
         "h2",
         null,
@@ -236,8 +242,8 @@ var ChatApp = React.createClass({
 
     socket.emit("create:room", { roomName: roomName }, function (result) {
       if (result) {
-        alert("방 생성 완료!");
         _this4.setState({ canMakeRoom: false });
+        _this4.selectChatRoom(roomName);
       }
     });
   },
