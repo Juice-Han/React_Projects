@@ -164,7 +164,23 @@ var ChatApp = React.createClass({
     this.setState({users: [...this.state.users, data.name]})
   },
 
-  _userLeft() {},
+  _userLeft(data) { //data = {roomName, name}
+    if(this.state.selectedRoomName !== data.roomName) return;
+    var users = this.state.users;
+    for(let i = 0; i < users.length; i++){
+      if(users[i] === data.name){
+        users.splice(i,1)
+        this.setState({users: users})
+      }
+    }
+  },
+
+  leftRoom(roomName, name){
+    socket.emit('user:left',{roomName: roomName, name: name}, (result)=>{
+      if(!result) return
+      this.setState({text: "", selectedRoomName: "", showRoom: false})
+    })
+  },
 
   handleMessageSubmit(message) {
     var { messages } = this.state;
@@ -297,6 +313,7 @@ var ChatApp = React.createClass({
               users={this.state.users}
             />
             {/* </div> */}
+            <button onClick={()=>this.leftRoom(this.state.selectedRoomName, this.props.userId)}>채팅방 나가기</button>
           </div>
         ) : (
           <p>채팅방에 입장해주세요.</p>

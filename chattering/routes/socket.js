@@ -138,6 +138,15 @@ module.exports = function (socket) {
     fn({ state: 200, messages: record.messages, users: record.users })
   })
 
+  socket.on('user:left',function(data,fn){
+    var result = roomNames.freeUser(data.roomName, data.name)
+    if(!result) return fn(false);
+    socket.broadcast.emit('user:left',{
+      roomName: data.roomName,
+      name: data.name
+    })
+    return fn(true)
+  })
 
   // broadcast a user's message to other users
   socket.on('send:message', function (data,fn) {
@@ -172,15 +181,15 @@ module.exports = function (socket) {
     } else {
       fn(false);
     }
-  });
+  }); 
 
   // clean up when a user leaves, and broadcast it to other users
-  socket.on('disconnect', function () {
-    socket.broadcast.emit('user:left', {
-      name: name
-    });
-    userNames.free(name);
-  });
+  // socket.on('disconnect', function () {
+  //   socket.broadcast.emit('user:left', {
+  //     name: name
+  //   });
+  //   userNames.free(name);
+  // });
 
   socket.on('login', function (data, fn) {
     connection.query('select * from user where id=? and password=?', [data.id, data.password], (err, results) => {
