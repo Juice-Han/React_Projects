@@ -79,11 +79,15 @@ var MessageList = React.createClass({
         if (message.userId === _this.props.userId) {
           return React.createElement(
             "span",
-            { className: "text-end" },
-            React.createElement(Message, { key: i, userId: message.userId, text: message.text })
+            { className: "text-end", key: i },
+            React.createElement(Message, { userId: message.userId, text: message.text })
           );
         }
-        return React.createElement(Message, { key: i, userId: message.userId, text: message.text });
+        return React.createElement(
+          "span",
+          { key: i },
+          React.createElement(Message, { userId: message.userId, text: message.text })
+        );
       })
     );
   }
@@ -209,25 +213,27 @@ var ChatApp = React.createClass({
   },
 
   _userJoined: function _userJoined(data) {
-    this.setState({ users: [].concat(_toConsumableArray(this.state.users), [data.name]) });
+    if (this.state.selectedRoomName !== data.roomName) return;
+    if (this.state.users.indexOf(data.userId) !== -1) return;
+    this.setState({ users: [].concat(_toConsumableArray(this.state.users), [data.userId]) });
   },
 
   _userLeft: function _userLeft(data) {
-    //data = {roomName, name}
+    //data = {roomName, userId}
     if (this.state.selectedRoomName !== data.roomName) return;
     var users = this.state.users;
     for (var i = 0; i < users.length; i++) {
-      if (users[i] === data.name) {
+      if (users[i] === data.userId) {
         users.splice(i, 1);
         this.setState({ users: users });
       }
     }
   },
 
-  leftRoom: function leftRoom(roomName, name) {
+  leftRoom: function leftRoom(roomName, userId) {
     var _this2 = this;
 
-    socket.emit('user:left', { roomName: roomName, name: name }, function (results) {
+    socket.emit("user:left", { roomName: roomName, userId: userId }, function (results) {
       if (results.state === 400) return;
       _this2.setState({ text: "", selectedRoomName: "", showRoom: false });
     });
@@ -238,7 +244,7 @@ var ChatApp = React.createClass({
 
     var messages = this.state.messages;
 
-    socket.emit("send:message", { message: message, selectedRoomName: this.state.selectedRoomName }, function (results) {
+    socket.emit("send:message", { message: message, roomName: this.state.selectedRoomName }, function (results) {
       if (results.state === 400) {
         return;
       } else {
@@ -265,6 +271,7 @@ var ChatApp = React.createClass({
     var _this4 = this;
 
     socket.emit("create:room", { roomName: roomName }, function (results) {
+      console.log(results);
       if (results.state === 200) {
         _this4.setState({ canMakeRoom: false });
         _this4.selectChatRoom(roomName);
@@ -276,12 +283,16 @@ var ChatApp = React.createClass({
     var _this5 = this;
 
     socket.emit("find:room", { roomName: roomName }, function (results) {
-      if (results.rooms.length !== 0) {
-        _this5.setState({ rooms: results.rooms });
-        _this5.setState({ canMakeRoom: false });
+      console.log(results);
+      if (results.state === 200) {
+        if (results.rooms.length !== 0) {
+          _this5.setState({ rooms: results.rooms, canMakeRoom: false });
+        } else {
+          _this5.setState({ rooms: [], canMakeRoom: true });
+        }
       } else {
-        _this5.setState({ canMakeRoom: true });
         _this5.setState({ rooms: [] });
+        window.alert("서버에 문제가 생겼습니다.");
       }
     });
   },
@@ -290,9 +301,12 @@ var ChatApp = React.createClass({
     var _this6 = this;
 
     this.setState({ selectedRoomName: selectedRoomName });
-    socket.emit("user:join", { name: this.props.userId, roomName: selectedRoomName }, function (results) {
+    socket.emit("user:join", { userId: this.props.userId, roomName: selectedRoomName }, function (results) {
       if (results.state === 400) return;
-      _this6.setState({ messages: results.messages, users: [].concat(_toConsumableArray(results.users)) });
+      _this6.setState({
+        messages: results.messages,
+        users: [].concat(_toConsumableArray(results.users))
+      });
     });
     this.setState({ showRoom: true });
   },
@@ -363,7 +377,7 @@ var ChatApp = React.createClass({
           React.createElement(
             "h5",
             null,
-            "채팅방 목록"
+            "채팅방 검색 결과"
           ),
           this.state.rooms.length !== 0 && this.state.rooms.map(function (room, idx) {
             return React.createElement(
@@ -376,14 +390,14 @@ var ChatApp = React.createClass({
                   "h5",
                   { className: "card-title" },
                   "방 제목: ",
-                  room.name
+                  room.roomName
                 ),
                 React.createElement(
                   "button",
                   {
                     className: "btn btn-primary",
                     onClick: function () {
-                      return _this7.selectChatRoom(room.name);
+                      return _this7.selectChatRoom(room.roomName);
                     }
                   },
                   "채팅방 입장"
@@ -414,14 +428,14 @@ var ChatApp = React.createClass({
           onMessageSubmit: this.handleMessageSubmit,
           userId: this.state.userId
         }),
-        React.createElement(UsersList, {
-          users: this.state.users
-        }),
+        React.createElement(UsersList, { users: this.state.users }),
         React.createElement(
           "button",
-          { onClick: function () {
+          {
+            onClick: function () {
               return _this7.leftRoom(_this7.state.selectedRoomName, _this7.props.userId);
-            } },
+            }
+          },
           "채팅방 나가기"
         )
       ) : React.createElement(

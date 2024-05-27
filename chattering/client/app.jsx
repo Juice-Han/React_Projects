@@ -44,12 +44,16 @@ var MessageList = React.createClass({
         {this.props.messages.map((message, i) => {
           if (message.userId === this.props.userId) {
             return (
-              <span className="text-end">
-                <Message key={i} userId={message.userId} text={message.text} />
+              <span className="text-end" key={i}>
+                <Message userId={message.userId} text={message.text} />
               </span>
             );
           }
-          return <Message key={i} userId={message.userId} text={message.text} />;
+          return (
+            <span key={i}>
+              <Message userId={message.userId} text={message.text} />
+            </span>
+          );
         })}
       </div>
     );
@@ -161,32 +165,39 @@ var ChatApp = React.createClass({
   },
 
   _userJoined(data) {
-    this.setState({users: [...this.state.users, data.name]})
+    if(this.state.selectedRoomName !== data.roomName) return
+    if(this.state.users.indexOf(data.userId) !== -1) return
+    this.setState({ users: [...this.state.users, data.userId] });
   },
 
-  _userLeft(data) { //data = {roomName, name}
-    if(this.state.selectedRoomName !== data.roomName) return;
+  _userLeft(data) {
+    //data = {roomName, userId}
+    if (this.state.selectedRoomName !== data.roomName) return;
     var users = this.state.users;
-    for(let i = 0; i < users.length; i++){
-      if(users[i] === data.name){
-        users.splice(i,1)
-        this.setState({users: users})
+    for (let i = 0; i < users.length; i++) {
+      if (users[i] === data.userId) {
+        users.splice(i, 1);
+        this.setState({ users: users });
       }
     }
   },
 
-  leftRoom(roomName, name){
-    socket.emit('user:left',{roomName: roomName, name: name}, (results)=>{
-      if(results.state === 400) return
-      this.setState({text: "", selectedRoomName: "", showRoom: false})
-    })
+  leftRoom(roomName, userId) {
+    socket.emit(
+      "user:left",
+      { roomName: roomName, userId: userId },
+      (results) => {
+        if (results.state === 400) return;
+        this.setState({ text: "", selectedRoomName: "", showRoom: false });
+      }
+    );
   },
 
   handleMessageSubmit(message) {
     var { messages } = this.state;
     socket.emit(
       "send:message",
-      { message: message, selectedRoomName: this.state.selectedRoomName },
+      { message: message, roomName: this.state.selectedRoomName },
       (results) => {
         if (results.state === 400) {
           return;
@@ -222,12 +233,15 @@ var ChatApp = React.createClass({
 
   findChatRoom(roomName) {
     socket.emit("find:room", { roomName: roomName }, (results) => {
-      if (results.rooms.length !== 0) {
-        this.setState({ rooms: results.rooms });
-        this.setState({ canMakeRoom: false });
+      if (results.state === 200) {
+        if (results.rooms.length !== 0) {
+          this.setState({ rooms: results.rooms, canMakeRoom: false });
+        } else {
+          this.setState({ rooms: [], canMakeRoom: true });
+        }
       } else {
-        this.setState({ canMakeRoom: true });
         this.setState({ rooms: [] });
+        window.alert("서버에 문제가 생겼습니다.");
       }
     });
   },
@@ -236,10 +250,13 @@ var ChatApp = React.createClass({
     this.setState({ selectedRoomName: selectedRoomName });
     socket.emit(
       "user:join",
-      { name: this.props.userId, roomName: selectedRoomName },
+      { userId: this.props.userId, roomName: selectedRoomName },
       (results) => {
         if (results.state === 400) return;
-        this.setState({ messages: results.messages, users: [...results.users] });
+        this.setState({
+          messages: results.messages,
+          users: [...results.users],
+        });
       }
     );
     this.setState({ showRoom: true });
@@ -273,16 +290,16 @@ var ChatApp = React.createClass({
                 </button>
               </div>
             )}
-            <h5>채팅방 목록</h5>
+            <h5>채팅방 검색 결과</h5>
             {this.state.rooms.length !== 0 &&
               this.state.rooms.map((room, idx) => {
                 return (
                   <div className="card mb-3" key={idx}>
                     <div className="card-body">
-                      <h5 className="card-title">방 제목: {room.name}</h5>
+                      <h5 className="card-title">방 제목: {room.roomName}</h5>
                       <button
                         className="btn btn-primary"
-                        onClick={() => this.selectChatRoom(room.name)}
+                        onClick={() => this.selectChatRoom(room.roomName)}
                       >
                         채팅방 입장
                       </button>
@@ -308,11 +325,15 @@ var ChatApp = React.createClass({
               onMessageSubmit={this.handleMessageSubmit}
               userId={this.state.userId}
             />
-            <UsersList
-              users={this.state.users}
-            />
+            <UsersList users={this.state.users} />
             {/* </div> */}
-            <button onClick={()=>this.leftRoom(this.state.selectedRoomName, this.props.userId)}>채팅방 나가기</button>
+            <button
+              onClick={() =>
+                this.leftRoom(this.state.selectedRoomName, this.props.userId)
+              }
+            >
+              채팅방 나가기
+            </button>
           </div>
         ) : (
           <p>채팅방에 입장해주세요.</p>

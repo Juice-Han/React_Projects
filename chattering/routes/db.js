@@ -1,10 +1,14 @@
-const mysql = require('mysql2')
+const { MongoClient, ServerApiVersion } = require('mongodb')
+require('dotenv').config()
 
-const connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'reactwebuser',
-    password: 'reactwebpw',
-    database: 'reactweb'
-})
+const uri = `mongodb+srv://${process.env.DB_ID}:${process.env.DB_PW}@cluster0.uyhgcoc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
-module.exports = connection
+const client = new MongoClient(uri, {
+    serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+    }
+});
+
+module.exports = client
