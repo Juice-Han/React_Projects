@@ -10,8 +10,8 @@ var UsersList = React.createClass({
       <div className="users">
         <h3> 참여자들 </h3>
         <ul>
-          {this.props.users.map((user, i) => {
-            return <li key={i}>{user}</li>;
+          {this.props.users.map((userId, i) => {
+            return <li key={i}>{userId}</li>;
           })}
         </ul>
       </div>
@@ -23,7 +23,7 @@ var Message = React.createClass({
   render() {
     return (
       <div className="message">
-        <p className="fs-5 my-0">{this.props.user}</p>
+        <p className="fs-5 my-0">{this.props.userId}</p>
         <p>{this.props.text}</p>
       </div>
     );
@@ -42,14 +42,14 @@ var MessageList = React.createClass({
       <div className="messages overflow-auto">
         <h2> 채팅방 </h2>
         {this.props.messages.map((message, i) => {
-          if (message.user === this.props.userId) {
+          if (message.userId === this.props.userId) {
             return (
               <span className="text-end">
-                <Message key={i} user={message.user} text={message.text} />
+                <Message key={i} userId={message.userId} text={message.text} />
               </span>
             );
           }
-          return <Message key={i} user={message.user} text={message.text} />;
+          return <Message key={i} userId={message.userId} text={message.text} />;
         })}
       </div>
     );
@@ -64,7 +64,7 @@ var MessageForm = React.createClass({
   handleSubmit(e) {
     e.preventDefault();
     var message = {
-      user: this.props.user,
+      userId: this.props.userId,
       text: this.state.text,
     };
     this.props.onMessageSubmit(message);
@@ -140,7 +140,7 @@ var ChatApp = React.createClass({
 
   componentDidMount() {
     // socket.on("init", this._initialize);
-    this.setState({ user: this.props.userId });
+    this.setState({ userId: this.props.userId });
     socket.on("send:message", this._messageRecieve);
     socket.on("user:join", this._userJoined);
     socket.on("user:left", this._userLeft);
@@ -176,8 +176,8 @@ var ChatApp = React.createClass({
   },
 
   leftRoom(roomName, name){
-    socket.emit('user:left',{roomName: roomName, name: name}, (result)=>{
-      if(!result) return
+    socket.emit('user:left',{roomName: roomName, name: name}, (results)=>{
+      if(results.state === 400) return
       this.setState({text: "", selectedRoomName: "", showRoom: false})
     })
   },
@@ -187,8 +187,8 @@ var ChatApp = React.createClass({
     socket.emit(
       "send:message",
       { message: message, selectedRoomName: this.state.selectedRoomName },
-      (result) => {
-        if (!result) {
+      (results) => {
+        if (results.state === 400) {
           return;
         } else {
           messages.push(message);
@@ -198,22 +198,22 @@ var ChatApp = React.createClass({
     );
   },
 
-  handleChangeName(newName) {
-    var oldName = this.state.user;
-    socket.emit("change:name", { name: newName }, (result) => {
-      if (!result) {
-        return alert("There was an error changing your name");
-      }
-      var { users } = this.state;
-      var index = users.indexOf(oldName);
-      users.splice(index, 1, newName);
-      this.setState({ users, user: newName });
-    });
-  },
+  // handleChangeName(newName) {
+  //   var oldName = this.state.user;
+  //   socket.emit("change:name", { name: newName }, (result) => {
+  //     if (!result) {
+  //       return alert("There was an error changing your name");
+  //     }
+  //     var { users } = this.state;
+  //     var index = users.indexOf(oldName);
+  //     users.splice(index, 1, newName);
+  //     this.setState({ users, user: newName });
+  //   });
+  // },
 
   createChatRoom(roomName) {
-    socket.emit("create:room", { roomName: roomName }, (result) => {
-      if (result) {
+    socket.emit("create:room", { roomName: roomName }, (results) => {
+      if (results.state === 200) {
         this.setState({ canMakeRoom: false });
         this.selectChatRoom(roomName);
       }
@@ -222,8 +222,8 @@ var ChatApp = React.createClass({
 
   findChatRoom(roomName) {
     socket.emit("find:room", { roomName: roomName }, (results) => {
-      if (results.length !== 0) {
-        this.setState({ rooms: results });
+      if (results.rooms.length !== 0) {
+        this.setState({ rooms: results.rooms });
         this.setState({ canMakeRoom: false });
       } else {
         this.setState({ canMakeRoom: true });
@@ -239,7 +239,6 @@ var ChatApp = React.createClass({
       { name: this.props.userId, roomName: selectedRoomName },
       (results) => {
         if (results.state === 400) return;
-        console.log(results)
         this.setState({ messages: results.messages, users: [...results.users] });
       }
     );
@@ -307,7 +306,7 @@ var ChatApp = React.createClass({
             />
             <MessageForm
               onMessageSubmit={this.handleMessageSubmit}
-              user={this.state.user}
+              userId={this.state.userId}
             />
             <UsersList
               users={this.state.users}
@@ -331,10 +330,10 @@ var LoginPage = React.createClass({
   login() {
     const id = this.props.userId;
     const password = this.state.password;
-    socket.emit("login", { id, password }, (result) => {
-      if (result === 200) {
+    socket.emit("login", { id, password }, (results) => {
+      if (results.state === 200) {
         this.props.setPageIndex(2);
-      } else if (result === 400) {
+      } else if (results.state === 400) {
         window.alert("계정이 없거나 비밀번호가 틀렸습니다!");
       } else {
         window.alert("서버에 문제가 생겼습니다.");
@@ -393,10 +392,10 @@ var SignOnPage = React.createClass({
   signOn() {
     const id = this.state.id;
     const password = this.state.password;
-    socket.emit("signOn", { id, password }, (result) => {
-      if (result === 400) {
+    socket.emit("signOn", { id, password }, (results) => {
+      if (results.state === 400) {
         window.alert("아이디가 중복되었습니다. 다른 아이디를 사용해주세요!");
-      } else if (result === 200) {
+      } else if (results.state === 200) {
         window.alert("계정이 생성되었습니다!");
         this.props.setPageIndex(0);
       } else {

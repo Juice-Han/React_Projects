@@ -2,54 +2,54 @@
 
 const connection = require('./db')
 
-var userNames = (function () {
-  var names = {};
+// var userNames = (function () {
+//   var names = {};
 
-  var claim = function (name) {
-    if (!name || names[name]) {
-      return false;
-    } else {
-      names[name] = true;
-      return true;
-    }
-  };
+//   var claim = function (name) {
+//     if (!name || names[name]) {
+//       return false;
+//     } else {
+//       names[name] = true;
+//       return true;
+//     }
+//   };
 
-  // find the lowest unused "guest" name and claim it
-  var getGuestName = function () {
-    var name,
-      nextUserId = 1;
+//   // find the lowest unused "guest" name and claim it
+//   var getGuestName = function () {
+//     var name,
+//       nextUserId = 1;
 
-    do {
-      name = 'Guest ' + nextUserId;
-      nextUserId += 1;
-    } while (!claim(name));
+//     do {
+//       name = 'Guest ' + nextUserId;
+//       nextUserId += 1;
+//     } while (!claim(name));
 
-    return name;
-  };
+//     return name;
+//   };
 
-  // serialize claimed names as an array
-  var get = function () {
-    var res = [];
-    for (user in names) {
-      res.push(user);
-    }
+//   // serialize claimed names as an array
+//   var get = function () {
+//     var res = [];
+//     for (user in names) {
+//       res.push(user);
+//     }
 
-    return res;
-  };
+//     return res;
+//   };
 
-  var free = function (name) {
-    if (names[name]) {
-      delete names[name];
-    }
-  };
+//   var free = function (name) {
+//     if (names[name]) {
+//       delete names[name];
+//     }
+//   };
 
-  return {
-    claim: claim,
-    free: free,
-    get: get,
-    getGuestName: getGuestName
-  };
-}());
+//   return {
+//     claim: claim,
+//     free: free,
+//     get: get,
+//     getGuestName: getGuestName
+//   };
+// }());
 
 var roomNames = (function () {
   var rooms = { chat1: { name: 'chat1', messages: [], users: [] } };
@@ -84,23 +84,23 @@ var roomNames = (function () {
     return true
   }
 
-  var addUser = function (roomName, userId){
-    if(!rooms[roomName]){
+  var addUser = function (roomName, userId) {
+    if (!rooms[roomName]) {
       return false
     }
     rooms[roomName].users.push(userId)
     return true
   }
 
-  var freeUser = function(roomName, userId){
-    if(!rooms[roomName]){
+  var freeUser = function (roomName, userId) {
+    if (!rooms[roomName]) {
       return false
     }
-    for(let i = 0; i<rooms[roomName].users.length; i++){
-      if(rooms[roomName].users[i] === userId){
-        rooms[roomName].users.splice(i,1)
+    for (let i = 0; i < rooms[roomName].users.length; i++) {
+      if (rooms[roomName].users[i] === userId) {
+        rooms[roomName].users.splice(i, 1)
         return true
-      } 
+      }
     }
     return false
   }
@@ -117,7 +117,7 @@ var roomNames = (function () {
 
 // export function for listening to the socket
 module.exports = function (socket) {
-  var name = userNames.getGuestName();
+  // var name = userNames.getGuestName();
 
   // send the new user their name and a list of users
   // socket.emit('init', {
@@ -138,50 +138,50 @@ module.exports = function (socket) {
     fn({ state: 200, messages: record.messages, users: record.users })
   })
 
-  socket.on('user:left',function(data,fn){
+  socket.on('user:left', function (data, fn) {
     var result = roomNames.freeUser(data.roomName, data.name)
-    if(!result) return fn(false);
-    socket.broadcast.emit('user:left',{
+    if (!result) return fn({ state: 400 });
+    socket.broadcast.emit('user:left', {
       roomName: data.roomName,
       name: data.name
     })
-    return fn(true)
+    return fn({ state: 200 })
   })
 
   // broadcast a user's message to other users
-  socket.on('send:message', function (data,fn) {
-    var result = roomNames.addChat(data.selectedRoomName, { user: data.message.user, text: data.message.text })
+  socket.on('send:message', function (data, fn) {
+    var result = roomNames.addChat(data.selectedRoomName, { userId: data.message.userId, text: data.message.text })
     if (!result) {
-      return fn(false)
+      return fn({state: 400})
     }
     socket.broadcast.emit('send:message', {
       roomName: data.selectedRoomName,
       message: {
-        user: data.message.user,
+        userId: data.message.userId,
         text: data.message.text
       }
     });
-    fn(true)
+    fn({state: 200})
   });
 
   // validate a user's name change, and broadcast it on success
-  socket.on('change:name', function (data, fn) {
-    if (userNames.claim(data.name)) {
-      var oldName = name;
-      userNames.free(oldName);
+  // socket.on('change:name', function (data, fn) {
+  //   if (userNames.claim(data.name)) {
+  //     var oldName = name;
+  //     userNames.free(oldName);
 
-      name = data.name;
+  //     name = data.name;
 
-      socket.broadcast.emit('change:name', {
-        oldName: oldName,
-        newName: name
-      });
+  //     socket.broadcast.emit('change:name', {
+  //       oldName: oldName,
+  //       newName: name
+  //     });
 
-      fn(true);
-    } else {
-      fn(false);
-    }
-  }); 
+  //     fn(true);
+  //   } else {
+  //     fn(false);
+  //   }
+  // }); 
 
   // clean up when a user leaves, and broadcast it to other users
   // socket.on('disconnect', function () {
@@ -195,12 +195,12 @@ module.exports = function (socket) {
     connection.query('select * from user where id=? and password=?', [data.id, data.password], (err, results) => {
       if (err) {
         console.log(err)
-        return fn(500)
+        return fn({state: 500})
       }
       if (results.length === 0) {
-        return fn(400)
+        return fn({state: 400})
       }
-      return fn(200)
+      return fn({state: 200})
     })
   })
 
@@ -209,17 +209,17 @@ module.exports = function (socket) {
     connection.query('select * from user where id=?', [data.id], (err, results) => {
       if (err) {
         console.log(err)
-        return fn(500)
+        return fn({state: 500})
       }
       if (results.length !== 0) {
-        return fn(400) // 아이디가 중복되었을 경우 400 상태 전송
+        return fn({state: 400}) // 아이디가 중복되었을 경우 400 상태 전송
       }
       connection.query('insert into user (id,password) values (?,?)', [data.id, data.password], (err2, results2) => {
         if (err2) {
           console.log(err2)
-          return fn(500)
+          return fn({state: 500})
         }
-        return fn(200) // 계정 생성 완료
+        return fn({state: 200}) // 계정 생성 완료
       })
     })
   })
@@ -227,12 +227,12 @@ module.exports = function (socket) {
   socket.on('create:room', function (data, fn) {
     var roomName = data.roomName
     roomNames.createRoom(roomName)
-    fn(true)
+    fn({state: 200})
   })
 
   socket.on('find:room', function (data, fn) {
     var roomName = data.roomName
     var results = roomNames.findRoom(roomName)
-    fn(results)
+    fn({state: 200, rooms: results})
   })
 };
