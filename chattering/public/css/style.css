@@ -3,15 +3,10 @@ body{
 	margin: 0 auto;
 	margin-top: 5%;
 }
-.users{
-	float : right;
-	margin-right: 30%;
-}
 .messages {
 	width: 500px;
 	height: 400px;
 	margin: auto;
-	border : 1px solid black;
 	padding: 1em;
 }
 .message_form,
@@ -21,11 +16,6 @@ body{
 .center{
 	width: 600px;
 	height: 700px;
-}
-.textinput{
-	margin-left: 3%;
-	width: 520px;
-	height: 40px;
 }
 .side{
 	width: 300px;

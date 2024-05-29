@@ -13,7 +13,7 @@ var UsersList = React.createClass({
   render: function render() {
     return React.createElement(
       "div",
-      { className: "users" },
+      { className: "overflow-auto ms-5", style: { "width": "300px", "height": "100px" } },
       React.createElement(
         "h3",
         null,
@@ -43,13 +43,18 @@ var Message = React.createClass({
       { className: "message" },
       React.createElement(
         "p",
-        { className: "fs-5 my-0" },
+        { className: "my-0", style: { fontSize: "14px" } },
         this.props.userId
       ),
       React.createElement(
         "p",
-        null,
+        { className: "my-0", style: { fontSize: "20px" } },
         this.props.text
+      ),
+      React.createElement(
+        "p",
+        { className: "text-secondary", style: { fontSize: "10px" } },
+        this.props.dateTime
       )
     );
   }
@@ -69,24 +74,27 @@ var MessageList = React.createClass({
 
     return React.createElement(
       "div",
-      { className: "messages overflow-auto" },
-      React.createElement(
-        "h2",
-        null,
-        " 채팅방 "
-      ),
+      { className: "messages overflow-auto border border-primary rounded" },
       this.props.messages.map(function (message, i) {
         if (message.userId === _this.props.userId) {
           return React.createElement(
             "span",
             { className: "text-end", key: i },
-            React.createElement(Message, { userId: message.userId, text: message.text })
+            React.createElement(Message, {
+              userId: message.userId,
+              text: message.text,
+              dateTime: message.dateTime
+            })
           );
         }
         return React.createElement(
           "span",
           { key: i },
-          React.createElement(Message, { userId: message.userId, text: message.text })
+          React.createElement(Message, {
+            userId: message.userId,
+            text: message.text,
+            dateTime: message.dateTime
+          })
         );
       })
     );
@@ -102,9 +110,25 @@ var MessageForm = React.createClass({
 
   handleSubmit: function handleSubmit(e) {
     e.preventDefault();
+    var today = new Date();
+    var _year$month$date$hours$minutes = {
+      year: today.getFullYear(),
+      month: today.getMonth() + 1,
+      date: today.getDate(),
+      hours: today.getHours(),
+      minutes: today.getMinutes()
+    };
+    var year = _year$month$date$hours$minutes.year;
+    var month = _year$month$date$hours$minutes.month;
+    var date = _year$month$date$hours$minutes.date;
+    var hours = _year$month$date$hours$minutes.hours;
+    var minutes = _year$month$date$hours$minutes.minutes;
+
+    var dateTime = year + "." + month + "." + date + "/" + hours + "시" + minutes + "분";
     var message = {
       userId: this.props.userId,
-      text: this.state.text
+      text: this.state.text,
+      dateTime: dateTime
     };
     this.props.onMessageSubmit(message);
     this.setState({ text: "" });
@@ -123,51 +147,12 @@ var MessageForm = React.createClass({
         { onSubmit: this.handleSubmit },
         React.createElement("input", {
           placeholder: "메시지 입력",
-          className: "textinput",
+          className: "form-control mx-auto",
           onChange: this.changeHandler,
-          value: this.state.text
+          value: this.state.text,
+          style: { "width": "500" }
         }),
         React.createElement("h3", null)
-      )
-    );
-  }
-});
-
-var ChangeNameForm = React.createClass({
-  displayName: "ChangeNameForm",
-
-  getInitialState: function getInitialState() {
-    return { newName: "" };
-  },
-
-  onKey: function onKey(e) {
-    this.setState({ newName: e.target.value });
-  },
-
-  handleSubmit: function handleSubmit(e) {
-    e.preventDefault();
-    var newName = this.state.newName;
-    this.props.onChangeName(newName);
-    this.setState({ newName: "" });
-  },
-
-  render: function render() {
-    return React.createElement(
-      "div",
-      { className: "change_name_form" },
-      React.createElement(
-        "h3",
-        null,
-        " 아이디 변경 "
-      ),
-      React.createElement(
-        "form",
-        { onSubmit: this.handleSubmit },
-        React.createElement("input", {
-          placeholder: "변경할 아이디 입력",
-          onChange: this.onKey,
-          value: this.state.newName
-        })
       )
     );
   }
@@ -254,24 +239,10 @@ var ChatApp = React.createClass({
     });
   },
 
-  // handleChangeName(newName) {
-  //   var oldName = this.state.user;
-  //   socket.emit("change:name", { name: newName }, (result) => {
-  //     if (!result) {
-  //       return alert("There was an error changing your name");
-  //     }
-  //     var { users } = this.state;
-  //     var index = users.indexOf(oldName);
-  //     users.splice(index, 1, newName);
-  //     this.setState({ users, user: newName });
-  //   });
-  // },
-
   createChatRoom: function createChatRoom(roomName) {
     var _this4 = this;
 
     socket.emit("create:room", { roomName: roomName }, function (results) {
-      console.log(results);
       if (results.state === 200) {
         _this4.setState({ canMakeRoom: false });
         _this4.selectChatRoom(roomName);
@@ -282,8 +253,11 @@ var ChatApp = React.createClass({
   findChatRoom: function findChatRoom(roomName) {
     var _this5 = this;
 
+    if (roomName === "") {
+      window.alert("방제목을 입력해주세요!");
+      return;
+    }
     socket.emit("find:room", { roomName: roomName }, function (results) {
-      console.log(results);
       if (results.state === 200) {
         if (results.rooms.length !== 0) {
           _this5.setState({ rooms: results.rooms, canMakeRoom: false });
@@ -308,7 +282,8 @@ var ChatApp = React.createClass({
         users: [].concat(_toConsumableArray(results.users))
       });
     });
-    this.setState({ showRoom: true });
+    console.log('roomName!');
+    this.setState({ showRoom: true, roomName: "" });
   },
 
   render: function render() {
@@ -325,25 +300,36 @@ var ChatApp = React.createClass({
           { className: "container text-center mb-3" },
           React.createElement(
             "h4",
-            { className: "mb-2" },
+            { className: "my-2" },
             "채팅방 검색"
           ),
-          React.createElement("input", {
-            onChange: function (e) {
-              return _this7.setState({ roomName: e.target.value });
-            }
-          }),
           React.createElement(
-            "button",
-            { onClick: function () {
-                return _this7.findChatRoom(_this7.state.roomName);
-              } },
-            "검색"
+            "div",
+            { className: "input-group mb-3" },
+            React.createElement("input", {
+              className: "form-control",
+              placeholder: "방제목",
+              value: this.state.roomName,
+              onChange: function (e) {
+                return _this7.setState({ roomName: e.target.value });
+              }
+            }),
+            React.createElement(
+              "button",
+              {
+                className: "btn btn-outline-primary",
+                type: "button",
+                onClick: function () {
+                  return _this7.findChatRoom(_this7.state.roomName);
+                }
+              },
+              "검색"
+            )
           )
         ),
         React.createElement(
           "div",
-          { className: "container" },
+          { className: "container", style: { "height": "570px" } },
           this.state.canMakeRoom && React.createElement(
             "div",
             { className: "mb-3" },
@@ -379,37 +365,41 @@ var ChatApp = React.createClass({
             null,
             "채팅방 검색 결과"
           ),
-          this.state.rooms.length !== 0 && this.state.rooms.map(function (room, idx) {
-            return React.createElement(
-              "div",
-              { className: "card mb-3", key: idx },
-              React.createElement(
+          React.createElement(
+            "div",
+            { className: "h-100 overflow-auto" },
+            this.state.rooms.length !== 0 && this.state.rooms.map(function (room, idx) {
+              return React.createElement(
                 "div",
-                { className: "card-body" },
+                { className: "card mb-3", key: idx },
                 React.createElement(
-                  "h5",
-                  { className: "card-title" },
-                  "방 제목: ",
-                  room.roomName
-                ),
-                React.createElement(
-                  "button",
-                  {
-                    className: "btn btn-primary",
-                    onClick: function () {
-                      return _this7.selectChatRoom(room.roomName);
-                    }
-                  },
-                  "채팅방 입장"
+                  "div",
+                  { className: "card-body" },
+                  React.createElement(
+                    "h5",
+                    { className: "card-title" },
+                    "방 제목: ",
+                    room.roomName
+                  ),
+                  React.createElement(
+                    "button",
+                    {
+                      className: "btn btn-primary",
+                      onClick: function () {
+                        return _this7.selectChatRoom(room.roomName);
+                      }
+                    },
+                    "채팅방 입장"
+                  )
                 )
-              )
-            );
-          })
+              );
+            })
+          )
         )
       ),
       this.state.showRoom ? React.createElement(
         "div",
-        { className: "center" },
+        { className: "center mt-3" },
         React.createElement(
           "div",
           null,
@@ -432,6 +422,7 @@ var ChatApp = React.createClass({
         React.createElement(
           "button",
           {
+            className: "float-end me-5 btn btn-danger",
             onClick: function () {
               return _this7.leftRoom(_this7.state.selectedRoomName, _this7.props.userId);
             }
@@ -439,9 +430,13 @@ var ChatApp = React.createClass({
           "채팅방 나가기"
         )
       ) : React.createElement(
-        "p",
-        null,
-        "채팅방에 입장해주세요."
+        "div",
+        { className: "center text-center mt-3" },
+        React.createElement(
+          "p",
+          { className: "fs-3" },
+          "채팅방에 입장해주세요."
+        )
       )
     );
   }

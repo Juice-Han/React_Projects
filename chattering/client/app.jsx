@@ -7,7 +7,7 @@ var socket = io.connect();
 var UsersList = React.createClass({
   render() {
     return (
-      <div className="users">
+      <div className="overflow-auto ms-5" style={{"width": "300px", "height": "100px"}}>
         <h3> 참여자들 </h3>
         <ul>
           {this.props.users.map((userId, i) => {
@@ -23,8 +23,15 @@ var Message = React.createClass({
   render() {
     return (
       <div className="message">
-        <p className="fs-5 my-0">{this.props.userId}</p>
-        <p>{this.props.text}</p>
+        <p className="my-0" style={{ fontSize: "14px" }}>
+          {this.props.userId}
+        </p>
+        <p className="my-0" style={{ fontSize: "20px" }}>
+          {this.props.text}
+        </p>
+        <p className="text-secondary" style={{ fontSize: "10px" }}>
+          {this.props.dateTime}
+        </p>
       </div>
     );
   },
@@ -39,19 +46,26 @@ var MessageList = React.createClass({
 
   render() {
     return (
-      <div className="messages overflow-auto">
-        <h2> 채팅방 </h2>
+      <div className="messages overflow-auto border border-primary rounded">
         {this.props.messages.map((message, i) => {
           if (message.userId === this.props.userId) {
             return (
               <span className="text-end" key={i}>
-                <Message userId={message.userId} text={message.text} />
+                <Message
+                  userId={message.userId}
+                  text={message.text}
+                  dateTime={message.dateTime}
+                />
               </span>
             );
           }
           return (
             <span key={i}>
-              <Message userId={message.userId} text={message.text} />
+              <Message
+                userId={message.userId}
+                text={message.text}
+                dateTime={message.dateTime}
+              />
             </span>
           );
         })}
@@ -67,9 +81,19 @@ var MessageForm = React.createClass({
 
   handleSubmit(e) {
     e.preventDefault();
+    const today = new Date();
+    let { year, month, date, hours, minutes } = {
+      year: today.getFullYear(),
+      month: today.getMonth() + 1,
+      date: today.getDate(),
+      hours: today.getHours(),
+      minutes: today.getMinutes(),
+    };
+    let dateTime = `${year}.${month}.${date}/${hours}시${minutes}분`;
     var message = {
       userId: this.props.userId,
       text: this.state.text,
+      dateTime: dateTime,
     };
     this.props.onMessageSubmit(message);
     this.setState({ text: "" });
@@ -85,43 +109,12 @@ var MessageForm = React.createClass({
         <form onSubmit={this.handleSubmit}>
           <input
             placeholder="메시지 입력"
-            className="textinput"
+            className="form-control mx-auto"
             onChange={this.changeHandler}
             value={this.state.text}
+            style={{"width": "500"}}
           />
           <h3></h3>
-        </form>
-      </div>
-    );
-  },
-});
-
-var ChangeNameForm = React.createClass({
-  getInitialState() {
-    return { newName: "" };
-  },
-
-  onKey(e) {
-    this.setState({ newName: e.target.value });
-  },
-
-  handleSubmit(e) {
-    e.preventDefault();
-    var newName = this.state.newName;
-    this.props.onChangeName(newName);
-    this.setState({ newName: "" });
-  },
-
-  render() {
-    return (
-      <div className="change_name_form">
-        <h3> 아이디 변경 </h3>
-        <form onSubmit={this.handleSubmit}>
-          <input
-            placeholder="변경할 아이디 입력"
-            onChange={this.onKey}
-            value={this.state.newName}
-          />
         </form>
       </div>
     );
@@ -165,8 +158,8 @@ var ChatApp = React.createClass({
   },
 
   _userJoined(data) {
-    if(this.state.selectedRoomName !== data.roomName) return
-    if(this.state.users.indexOf(data.userId) !== -1) return
+    if (this.state.selectedRoomName !== data.roomName) return;
+    if (this.state.users.indexOf(data.userId) !== -1) return;
     this.setState({ users: [...this.state.users, data.userId] });
   },
 
@@ -209,19 +202,6 @@ var ChatApp = React.createClass({
     );
   },
 
-  // handleChangeName(newName) {
-  //   var oldName = this.state.user;
-  //   socket.emit("change:name", { name: newName }, (result) => {
-  //     if (!result) {
-  //       return alert("There was an error changing your name");
-  //     }
-  //     var { users } = this.state;
-  //     var index = users.indexOf(oldName);
-  //     users.splice(index, 1, newName);
-  //     this.setState({ users, user: newName });
-  //   });
-  // },
-
   createChatRoom(roomName) {
     socket.emit("create:room", { roomName: roomName }, (results) => {
       if (results.state === 200) {
@@ -232,6 +212,10 @@ var ChatApp = React.createClass({
   },
 
   findChatRoom(roomName) {
+    if (roomName === "") {
+      window.alert("방제목을 입력해주세요!");
+      return;
+    }
     socket.emit("find:room", { roomName: roomName }, (results) => {
       if (results.state === 200) {
         if (results.rooms.length !== 0) {
@@ -255,11 +239,11 @@ var ChatApp = React.createClass({
         if (results.state === 400) return;
         this.setState({
           messages: results.messages,
-          users: [...results.users],
+          users: [...results.users]
         });
       }
     );
-    this.setState({ showRoom: true });
+    this.setState({ showRoom: true, roomName: ""});
   },
 
   render() {
@@ -267,15 +251,24 @@ var ChatApp = React.createClass({
       <div className="d-flex border border-2 border-primary-subtle">
         <div className="side border-end border-1">
           <div className="container text-center mb-3">
-            <h4 className="mb-2">채팅방 검색</h4>
-            <input
-              onChange={(e) => this.setState({ roomName: e.target.value })}
-            />
-            <button onClick={() => this.findChatRoom(this.state.roomName)}>
-              검색
-            </button>
+            <h4 className="my-2">채팅방 검색</h4>
+            <div className="input-group mb-3">
+              <input
+                className="form-control"
+                placeholder="방제목"
+                value={this.state.roomName}
+                onChange={(e) => this.setState({ roomName: e.target.value })}
+              />
+              <button
+                className="btn btn-outline-primary"
+                type="button"
+                onClick={() => this.findChatRoom(this.state.roomName)}
+              >
+                검색
+              </button>
+            </div>
           </div>
-          <div className="container">
+          <div className="container" style={{"height": "570px"}}>
             {this.state.canMakeRoom && (
               <div className="mb-3">
                 <h5>찾으시는 방이 존재하지 않습니다.</h5>
@@ -291,6 +284,7 @@ var ChatApp = React.createClass({
               </div>
             )}
             <h5>채팅방 검색 결과</h5>
+            <div className="h-100 overflow-auto">
             {this.state.rooms.length !== 0 &&
               this.state.rooms.map((room, idx) => {
                 return (
@@ -307,10 +301,11 @@ var ChatApp = React.createClass({
                   </div>
                 );
               })}
+            </div>
           </div>
         </div>
         {this.state.showRoom ? (
-          <div className="center">
+          <div className="center mt-3">
             <div>
               <h3 className="text-center">
                 방 제목 : {this.state.selectedRoomName}
@@ -328,6 +323,7 @@ var ChatApp = React.createClass({
             <UsersList users={this.state.users} />
             {/* </div> */}
             <button
+              className="float-end me-5 btn btn-danger"
               onClick={() =>
                 this.leftRoom(this.state.selectedRoomName, this.props.userId)
               }
@@ -336,7 +332,9 @@ var ChatApp = React.createClass({
             </button>
           </div>
         ) : (
-          <p>채팅방에 입장해주세요.</p>
+          <div className="center text-center mt-3">
+            <p className="fs-3">채팅방에 입장해주세요.</p>
+          </div>
         )}
       </div>
     );
@@ -457,6 +455,7 @@ var SignOnPage = React.createClass({
         >
           회원가입
         </button>
+        
         <div className="w-100 d-flex justify-content-center mb-5">
           <button
             className="w-75 btn btn-lg btn-secondary"

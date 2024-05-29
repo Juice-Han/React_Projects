@@ -37,19 +37,19 @@ module.exports = function (socket) {
   })
 
   socket.on('user:left', async function (data, fn) {
-    try{
+    try {
       const result = await db.collection('chatting-room').updateOne(
-        {roomName: data.roomName},{
-          $pull: {
-            users: {
-              $in: [data.userId]
-            }
+        { roomName: data.roomName }, {
+        $pull: {
+          users: {
+            $in: [data.userId]
           }
         }
+      }
       )
-    }catch(err){
+    } catch (err) {
       console.log(err)
-      return fn({state: 500})
+      return fn({ state: 500 })
     }
     socket.broadcast.emit('user:left', {
       roomName: data.roomName,
@@ -60,14 +60,19 @@ module.exports = function (socket) {
 
   // broadcast a user's message to other users
   socket.on('send:message', async function (data, fn) {
+    let dateTime
     try {
+      const today = new Date();
+      let { year, month, date, hours, minutes } = { year: today.getFullYear(), month: today.getMonth() + 1, date: today.getDate(), hours: today.getHours(), minutes: today.getMinutes()}
+      dateTime = `${year}.${month}.${date}/${hours}시${minutes}분`
       const result = await db.collection('chatting-room').updateOne(
         { roomName: data.roomName },
         {
           $addToSet: {
             messages: {
               userId: data.message.userId,
-              text: data.message.text
+              text: data.message.text,
+              dateTime: dateTime
             }
           }
         }
@@ -80,7 +85,8 @@ module.exports = function (socket) {
       roomName: data.roomName,
       message: {
         userId: data.message.userId,
-        text: data.message.text
+        text: data.message.text,
+        dateTime: dateTime
       }
     });
     return fn({ state: 200 })
@@ -143,6 +149,9 @@ module.exports = function (socket) {
   })
 
   socket.on('create:room', async function (data, fn) {
+    if(data.roomName === ""){
+      return fn({state: 400})
+    }
     try {
       const result = await db.collection('chatting-room').insertOne({ roomName: data.roomName, messages: [], users: [] })
       return fn({ state: 200 })
